@@ -1,5 +1,7 @@
 # Stowly
 
+`AGENTS.md` and `CLAUDE.md` are the same file via symlink. Edit only one of them and avoid duplicate changes.
+
 Desktop load-planning workbench: Electron shell + React/Ant Design/Three.js renderer + Python FastAPI backend that drives `packingsolver3d`. Chinese is the default UI language, English is the second; every user-visible string goes through `react-i18next` and exists in both `src/renderer/src/i18n/zh-CN.json` and `en-US.json` (a test enforces identical key sets).
 
 ## Layout
@@ -8,6 +10,7 @@ Desktop load-planning workbench: Electron shell + React/Ant Design/Three.js rend
 - `src/preload/` the only bridge to Node (`window.stowly`), typed in `index.d.ts`.
 - `src/renderer/src/` `lib/` (project model, result helpers, backend client, palette), `store/` (zustand), `three/` (scene controller; `placementBoxes` is the pure, tested part), `components/`, `i18n/`, `App.tsx`.
 - `backend/stowly_backend/` `models.py` (mirrors `lib/project.ts`; millimetres and kilograms everywhere), `solver.py` (project -> packingsolver3d instance, job manager), `importers.py`, `exporters.py`, `presets/` (JSON data + `SOURCES.md`), `app.py` (FastAPI, `X-Stowly-Token`), `__main__.py`.
+- `Makefile` is the developer entry point (`make run`, `make test`, `make build`, `make dist-dir`, `make dist`); it creates `.venv` and runs `npm ci` on demand, so keep new commands there rather than in prose.
 - `scripts/prepare-python.mjs` downloads python-build-standalone and installs the backend for packaging; `electron-builder.yml` ships it as `resources/python`.
 
 ## Rules

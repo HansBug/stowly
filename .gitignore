@@ -2,6 +2,7 @@ node_modules/
 out/
 dist/
 resources/python/
+resources/cpython-*.tar.gz
 coverage/
 *.log
 .DS_Store

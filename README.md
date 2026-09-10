@@ -30,24 +30,21 @@ The renderer never talks to Node directly; the preload exposes a handful of type
 
 ## Development
 
-```shell
-# backend
-python -m venv .venv && . .venv/bin/activate
-pip install -e "./backend[test]"
-(cd backend && pytest --cov)
+`make help` lists every target. The first `make run` creates `.venv` with the backend and runs `npm ci` by itself.
 
-# frontend + shell
-npm ci
-npm run typecheck
-npm run test:coverage
-npm run dev            # Electron with hot reload; the backend runs from .venv (or STOWLY_PYTHON)
+```shell
+make run            # Electron with hot reload; the backend runs from .venv (or STOWLY_PYTHON)
+make test           # backend pytest with coverage, frontend vitest with coverage, typecheck
+make build          # renderer/main/preload bundles into out/
 ```
+
+Without make: `python -m venv .venv && .venv/bin/pip install -e "./backend[test]"`, then `npm ci`, `npm run typecheck`, `npm run test:coverage`, `npm run dev`; backend tests are `cd backend && pytest --cov`.
 
 ## Packaging
 
 ```shell
-node scripts/prepare-python.mjs     # relocatable CPython 3.12 + backend + packingsolver3d into resources/python
-npm run dist                        # electron-builder: AppImage/deb, NSIS installer, DMG
+make dist-dir       # relocatable CPython 3.12 + backend + packingsolver3d into resources/python, then dist/<platform>-unpacked
+make dist           # same, plus the installers: AppImage/deb, NSIS installer, DMG
 ```
 
 Targets: Linux x64 (glibc 2.31 and newer, i.e. Ubuntu 20.04+), Windows x64 (10/11), macOS arm64 and x64 (12+). The `Build Desktop` workflow produces all of them on native runners.
