@@ -115,6 +115,38 @@ jobs:
             exit $status
           '
 
+      # --- Diagnostic (Windows arm64 only, never fails the job): the legacy NSIS 3.0.4.1 installer detects ARM64 correctly but its
+      #     x86 Nsis7z plugin leaves no files behind under emulation. Try the modern NSIS 3.12 bundle and the zip payload.
+      - name: Experiment with alternative NSIS toolsets for the arm64 installer
+        if: matrix.target == 'win-arm64'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          $variants = @(
+            @{ name = "nsis312";      args = @("-c.toolsets.nsis=1.2.1") },
+            @{ name = "zip";          args = @("-c.nsis.useZip=true") },
+            @{ name = "nsis312-zip";  args = @("-c.toolsets.nsis=1.2.1", "-c.nsis.useZip=true") }
+          )
+          foreach ($v in $variants) {
+            $out = "$PWD\dist-exp-$($v.name)"
+            Write-Host "===== variant $($v.name): $($v.args -join ' ')"
+            npx electron-builder --win nsis --arm64 --publish never "-c.directories.output=$out" @($v.args) 2>&1 | Select-Object -Last 5
+            $setup = Get-ChildItem "$out\*-installer.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $setup) { Write-Host "no installer produced"; continue }
+            $installDir = "$out\installed"
+            $i = Start-Process -FilePath $setup.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
+            Start-Sleep -Seconds 20
+            Write-Host "installer exit $($i.ExitCode); files in ${installDir}:"
+            Get-ChildItem $installDir -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host
+            Get-Content "$installDir\install-debug.txt" -ErrorAction SilentlyContinue | Write-Host
+            if (Test-Path "$installDir\Stowly.exe") {
+              $env:Path = "C:\Windows\System32;C:\Windows"
+              $p = Start-Process -FilePath "$installDir\Stowly.exe" -ArgumentList "--smoke=$out\smoke.json" -Wait -PassThru -NoNewWindow
+              Write-Host "smoke exit $($p.ExitCode)"; Get-Content "$out\smoke.json" -ErrorAction SilentlyContinue | Select-Object -First 12 | Write-Host
+            }
+          }
+
       # --- Windows: the portable zip extracted next to nothing, and the NSIS installer installed silently; toolchains hidden ---
       - name: Smoke test the portable zip and the installer with the toolchains hidden (Windows)
         if: runner.os == 'Windows'
