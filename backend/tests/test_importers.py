@@ -83,3 +83,32 @@ def test_import_files_detects_formats():
         import_files([('x.bin', b'\x00\x01')])
     with pytest.raises(ImportError_, match='no file'):
         import_files([])
+
+
+def test_rows_from_csv_falls_back_when_the_dialect_cannot_be_sniffed():
+    # A single column gives the sniffer nothing to work with; the excel dialect is used instead of failing.
+    assert rows_from_csv('name\nA\nB\n') == [['name'], ['A'], ['B']]
+
+
+def test_cargo_list_skips_blank_rows_and_needs_at_least_one_item():
+    rows = [['name', 'length', 'width', 'height'], ['gap', '', '', ''], ['real', '10', '20', '30']]
+    project = cargo_list(rows)
+    assert [i.name for i in project.items] == ['real']
+    with pytest.raises(ImportError_, match='no item rows'):
+        cargo_list([['name', 'length', 'width', 'height'], ['gap', '', '', '']])
+
+
+def test_rotation_tokens_cover_the_three_modes():
+    from stowly_backend.importers import _rotation_token
+    assert _rotation_token('yes') == 'all' and _rotation_token('直立') == 'upright' and _rotation_token('no') == 'fixed'
+
+
+def test_import_files_recognises_a_single_packingsolver_items_csv():
+    project = import_files([('items.csv', PS_ITEMS.encode())])
+    assert [i.rotations for i in project.items] == ['upright', 'fixed']
+    assert project.bins == []
+
+
+def test_packingsolver_items_without_rotation_columns_may_rotate_freely():
+    project = packingsolver_csv('ID,X,Y,Z,COPIES\n0,10,20,30,2\n')
+    assert project.items[0].rotations == 'all' and project.items[0].copies == 2

@@ -10,11 +10,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    testTimeout: 60000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      include: ['src/renderer/src/lib/**', 'src/renderer/src/store/**', 'src/renderer/src/three/boxes.ts', 'src/renderer/src/i18n/**', 'src/main/backend.ts'],
-      thresholds: { lines: 80, statements: 80, functions: 80, branches: 65 }
+      // Everything under src/ counts: main process, preload and renderer. WebGL is mocked, Electron is mocked, the rest runs for real.
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.d.ts', 'src/**/__fixtures__/**', 'src/renderer/src/test/**'],
+      thresholds: { lines: 90, statements: 90, functions: 90, branches: 80 }
     }
   }
 })

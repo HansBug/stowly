@@ -18,7 +18,7 @@ export class BackendProcess {
   start(timeoutMs = 30000): Promise<BackendInfo> {
     const token = randomBytes(16).toString('hex')
     return new Promise((resolve, reject) => {
-      const child = spawn(this.location.command, ['-m', 'stowly_backend', '--port', '0', '--token', token], { env: this.location.env, stdio: ['ignore', 'pipe', 'pipe'] })
+      const child = spawn(this.location.command, [...(this.location.args ?? []), '-m', 'stowly_backend', '--port', '0', '--token', token], { env: this.location.env, stdio: ['ignore', 'pipe', 'pipe'] })
       this.child = child
       let settled = false
       let buffer = ''

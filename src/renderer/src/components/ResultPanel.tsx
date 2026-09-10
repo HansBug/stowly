@@ -20,7 +20,7 @@ export function ResultPanel({ project, result, error, selectedBin, onExport }: P
   if (!result) return <Empty description={t('result.none')} />
   const bin = result.bins[selectedBin]
   const volumeValued = project.settings.objective === 'knapsack' && project.items.every((item) => item.profit == null)
-  const fmt = (v: number | null) => (v == null ? '-' : volumeValued ? `${(v / 1e9).toFixed(2)} m³` : Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2))
+  const fmt = (v: number | null) => (v == null ? '-' : volumeValued ? `${(v / 1e9).toFixed(2)} m³` : v.toLocaleString('en-US', { maximumFractionDigits: 2 }))
   const counts = result.counts.map((count) => ({ ...count, name: itemName(project, count.itemId), index: project.items.findIndex((item) => item.id === count.itemId) }))
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>

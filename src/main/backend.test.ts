@@ -21,11 +21,12 @@ describe('locatePython', () => {
   })
   it('uses the bundled interpreter when packaged', () => {
     expect(locatePython({ ...base, packaged: true, platform: 'linux' }).command).toBe('/app/resources/python/bin/python3')
-    expect(locatePython({ ...base, packaged: true, platform: 'win32' }).command).toBe('/app/resources/python/python.exe'.replace(/\//g, process.platform === 'win32' ? '\\' : '/'))
+    expect(locatePython({ ...base, packaged: true, platform: 'win32' }).command).toBe('\\app\\resources\\python\\python.exe')
   })
   it('falls back from the venv to the system interpreter in development', () => {
     expect(locatePython({ ...base, packaged: false, platform: 'linux', exists: () => true }).command).toBe('/src/.venv/bin/python')
     expect(locatePython({ ...base, packaged: false, platform: 'linux', exists: () => false }).command).toBe('python3')
     expect(locatePython({ ...base, packaged: false, platform: 'win32', exists: () => false }).command).toBe('python')
+    expect(locatePython({ ...base, packaged: false, platform: 'win32', exists: () => true }).command).toBe('\\src\\.venv\\Scripts\\python.exe')
   })
 })

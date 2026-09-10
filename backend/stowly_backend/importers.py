@@ -178,7 +178,7 @@ def packingsolver_csv(items_text: str, bins_text: Optional[str] = None) -> Proje
     for number, row in enumerate(rows(items_text)):
         flags = {key[len('ROTATION_'):]: (row.get(key) or '0').strip() == '1' for key in row if key.startswith('ROTATION_')}
         if not flags or all(flags.values()):
-            rotations = 'all' if (not flags or all(flags.values())) else 'fixed'
+            rotations = 'all'
         else:
             allowed = {k for k, v in flags.items() if v}
             rotations = 'upright' if allowed == {'XYZ', 'YXZ'} else ('fixed' if allowed == {'XYZ'} else 'all')

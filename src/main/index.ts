@@ -1,15 +1,18 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
-import { readFile, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { locatePython } from './backend'
+import { locatePython, type PythonLocation } from './backend'
+import { createHandlers, registerIpc } from './ipc'
 import { BackendProcess } from './process'
+import { smokeTest } from './smoke'
 
 const projectRoot = path.resolve(__dirname, '..', '..')
+let location: PythonLocation | null = null
 let backend: BackendProcess | null = null
 let startupError: string | null = null
 
 async function startBackend(): Promise<void> {
-  const location = locatePython({ packaged: app.isPackaged, resourcesPath: process.resourcesPath, projectRoot, platform: process.platform, env: process.env })
+  location = locatePython({ packaged: app.isPackaged, resourcesPath: process.resourcesPath, projectRoot, platform: process.platform, env: process.env })
   backend = new BackendProcess(location)
   try {
     await backend.start()
@@ -18,7 +21,7 @@ async function startBackend(): Promise<void> {
   }
 }
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -37,29 +40,49 @@ function createWindow(): void {
   } else {
     void win.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+  return win
 }
 
-ipcMain.handle('backend:info', () => ({ ...(backend?.current ?? null), error: startupError, log: backend?.log.slice(-50) ?? [] }))
-ipcMain.handle('app:version', () => app.getVersion())
-ipcMain.handle('shell:openExternal', (_event, url: string) => shell.openExternal(url))
-ipcMain.handle('dialog:saveText', async (_event, options: { defaultPath: string; filters: Electron.FileFilter[]; content: string }) => {
-  const result = await dialog.showSaveDialog({ defaultPath: options.defaultPath, filters: options.filters })
-  if (result.canceled || !result.filePath) return null
-  await writeFile(result.filePath, options.content, 'utf-8')
-  return result.filePath
-})
-ipcMain.handle('dialog:openFiles', async (_event, options: { filters: Electron.FileFilter[]; multiple?: boolean }) => {
-  const result = await dialog.showOpenDialog({ filters: options.filters, properties: options.multiple ? ['openFile', 'multiSelections'] : ['openFile'] })
-  if (result.canceled) return []
-  return Promise.all(result.filePaths.map(async (filePath) => ({ name: path.basename(filePath), path: filePath, data: (await readFile(filePath)).buffer })))
-})
+/** `--smoke` or `--smoke=/path/report.json`: run the self-test and exit with its verdict. */
+export function smokeReportPath(argv: string[]): string | null {
+  const flag = argv.find((arg) => arg === '--smoke' || arg.startsWith('--smoke='))
+  if (!flag) return null
+  return flag.includes('=') ? flag.slice(flag.indexOf('=') + 1) : path.join(process.cwd(), 'stowly-smoke.json')
+}
+
+/** True once the renderer has drawn the app and enabled the preset buttons, which only happens after it fetched the presets. */
+export async function rendererReady(win: Pick<BrowserWindow, 'webContents'>, timeoutMs = 60000, sleepMs = 500): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs
+  const probe = `(() => { const buttons = [...document.querySelectorAll('button')]; return document.body.innerText.includes('Stowly') && buttons.some((b) => /预设|preset/i.test(b.textContent || '') && !b.disabled) })()`
+  while (Date.now() < deadline) {
+    if (!win.webContents.isLoading() && (await win.webContents.executeJavaScript(probe)) === true) return true
+    await new Promise((resolve) => setTimeout(resolve, sleepMs))
+  }
+  return false
+}
+
+registerIpc(ipcMain, createHandlers({
+  // Electron's dialog methods are overloaded (optional parent window); the plain-options form is all the handlers need.
+  dialog: { showSaveDialog: (options) => dialog.showSaveDialog(options), showOpenDialog: (options) => dialog.showOpenDialog(options) },
+  shell,
+  version: () => app.getVersion(),
+  backend: () => ({ info: backend?.current ?? null, error: startupError, log: backend?.log ?? [] })
+}))
 
 app.whenReady().then(async () => {
   await startBackend()
-  createWindow()
+  const win = createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+  const reportPath = smokeReportPath(process.argv)
+  if (reportPath) {
+    const report = await smokeTest({ info: backend?.current ?? null, startupError, log: backend?.log ?? [], location: location!, renderer: () => rendererReady(win) })
+    await writeFile(reportPath, JSON.stringify(report, null, 2), 'utf-8')
+    console.log(`SMOKE ${report.ok ? 'OK' : 'FAILED'} ${reportPath}`)
+    backend?.stop()
+    app.exit(report.ok ? 0 : 1)
+  }
 })
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

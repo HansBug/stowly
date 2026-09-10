@@ -5,7 +5,7 @@ VENV   ?= .venv
 VENV_PY := $(abspath $(VENV)/bin/python)
 NPM    ?= npm
 
-.PHONY: help setup setup-python setup-node run test test-backend test-frontend typecheck build probe build-python dist dist-dir clean
+.PHONY: help setup setup-python setup-node run test test-backend test-frontend typecheck build probe build-python dist dist-dir smoke clean
 
 help:
 	@echo "Stowly"
@@ -17,6 +17,7 @@ help:
 	@echo "  make build-python  - download a relocatable CPython and install the backend into resources/python (needs network)"
 	@echo "  make dist-dir      - build-python + build + electron-builder --dir -> dist/<platform>-unpacked (quick local package)"
 	@echo "  make dist          - build-python + build + electron-builder       -> installers under dist/"
+	@echo "  make smoke         - dist-dir, then run the packaged app's self-test (stowly --smoke) and print the report"
 	@echo "  make clean         - remove out/, dist/, coverage files and resources/python"
 
 # Environment: the venv is created on first use, node_modules follows package-lock.json.
@@ -75,6 +76,10 @@ dist-dir: build-python build
 
 dist: build-python build
 	npx electron-builder --publish never
+
+# The same self-test the Build Desktop workflow runs inside bare containers; --no-sandbox for hosts that restrict user namespaces.
+smoke: dist-dir
+	dist/linux-unpacked/stowly --no-sandbox --smoke=dist/smoke-local.json && cat dist/smoke-local.json
 
 clean:
 	rm -rf out dist coverage backend/coverage.xml backend/.coverage resources/python

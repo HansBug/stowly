@@ -28,19 +28,24 @@ export function parseReadyLine(line: string): { host: string; port: number } | n
 
 export interface PythonLocation {
   command: string
+  /** Arguments placed before `-m stowly_backend`; tests use them to run a fake interpreter through node. */
+  args?: string[]
   env: NodeJS.ProcessEnv
 }
 
 /** Decide which interpreter runs the backend. Exported for tests; pure apart from existsSync. */
 export function locatePython(opts: { packaged: boolean; resourcesPath: string; projectRoot: string; platform: NodeJS.Platform; env: NodeJS.ProcessEnv; exists?: (p: string) => boolean }): PythonLocation {
   const exists = opts.exists ?? existsSync
+  // Paths follow the target platform, not the host, so the decision is the same everywhere (and so are the tests).
+  const join = (opts.platform === 'win32' ? path.win32 : path.posix).join
   const env: NodeJS.ProcessEnv = { ...opts.env, PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8' }
-  if (opts.env.STOWLY_PYTHON) return { command: opts.env.STOWLY_PYTHON, env: { ...env, PYTHONPATH: path.join(opts.projectRoot, 'backend') } }
+  if (opts.env.STOWLY_PYTHON) return { command: opts.env.STOWLY_PYTHON, env: { ...env, PYTHONPATH: join(opts.projectRoot, 'backend') } }
   if (opts.packaged) {
-    const bundled = opts.platform === 'win32' ? path.join(opts.resourcesPath, 'python', 'python.exe') : path.join(opts.resourcesPath, 'python', 'bin', 'python3')
+    // Packaged builds never fall back to a system interpreter: a missing bundle must fail loudly, not run on whatever is installed.
+    const bundled = opts.platform === 'win32' ? join(opts.resourcesPath, 'python', 'python.exe') : join(opts.resourcesPath, 'python', 'bin', 'python3')
     return { command: bundled, env }
   }
-  const venv = opts.platform === 'win32' ? path.join(opts.projectRoot, '.venv', 'Scripts', 'python.exe') : path.join(opts.projectRoot, '.venv', 'bin', 'python')
+  const venv = opts.platform === 'win32' ? join(opts.projectRoot, '.venv', 'Scripts', 'python.exe') : join(opts.projectRoot, '.venv', 'bin', 'python')
   const command = exists(venv) ? venv : opts.platform === 'win32' ? 'python' : 'python3'
-  return { command, env: { ...env, PYTHONPATH: path.join(opts.projectRoot, 'backend') } }
+  return { command, env: { ...env, PYTHONPATH: join(opts.projectRoot, 'backend') } }
 }

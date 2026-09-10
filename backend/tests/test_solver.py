@@ -73,3 +73,17 @@ def test_job_manager_reports_solver_errors():
             break
         time.sleep(0.05)
     assert state.status in ('done', 'failed')
+
+
+def test_job_manager_marks_solver_exceptions_as_failed(project, monkeypatch):
+    import stowly_backend.solver as solver_module
+    monkeypatch.setattr(solver_module, 'solve_project', lambda _project: (_ for _ in ()).throw(ValueError('refused by the solver')))
+    manager = JobManager()
+    job = manager.start(project)
+    for _ in range(200):
+        state = manager.get(job.id)
+        if state.status != 'running':
+            break
+        time.sleep(0.02)
+    assert state.status == 'failed'
+    assert 'refused by the solver' in state.error

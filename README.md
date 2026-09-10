@@ -1,32 +1,70 @@
 # Stowly
 
-[![Code Test](https://github.com/HansBug/stowly/workflows/Code%20Test/badge.svg)](https://github.com/HansBug/stowly/actions?query=workflow%3A%22Code+Test%22)
-[![Build Desktop](https://github.com/HansBug/stowly/workflows/Build%20Desktop/badge.svg)](https://github.com/HansBug/stowly/actions?query=workflow%3A%22Build+Desktop%22)
+**English** | [中文说明](README_zh.md)
+
+[![Code Test](https://github.com/HansBug/stowly/actions/workflows/test.yaml/badge.svg)](https://github.com/HansBug/stowly/actions/workflows/test.yaml)
+[![Build Desktop](https://github.com/HansBug/stowly/actions/workflows/build.yaml/badge.svg)](https://github.com/HansBug/stowly/actions/workflows/build.yaml)
 [![codecov](https://codecov.io/gh/HansBug/stowly/branch/main/graph/badge.svg)](https://codecov.io/gh/HansBug/stowly)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Stowly is a desktop workbench for three-dimensional load planning: describe the containers, trucks or pallets you have and the cargo you need to stow, let [packingsolver3d](https://github.com/HansBug/packingsolver3d) (PackingSolver's `box` / `boxstacks` engines) find a packing under a time budget, and inspect the result in an interactive 3D view. The interface is in Chinese by default and switches to English with one click.
+Stowly is a desktop workbench for three-dimensional load planning: describe the containers (ISO boxes, trucks, pallets, cartons) and the cargo, press *Solve*, and get a placement for every piece with a 3D view, utilisation figures and a CSV you can hand to the warehouse. The solver is [packingsolver3d](https://github.com/HansBug/packingsolver3d), an in-process Python binding of Florian Fontan's [PackingSolver](https://github.com/fontanf/packingsolver) `box` and `boxstacks` algorithms; Stowly wraps it in an Electron shell with a React / Ant Design interface and a Three.js viewer. Everything runs locally and offline; the installers carry their own Python.
 
-**Status: prototype.** It solves, draws, imports, exports and saves; it does not yet do weight distribution, stability or loading sequences beyond what the engine returns.
+![Stowly after solving the demo project: a 40' HQ container with postal cartons, pallets and IBC tanks](docs/screenshots/solved-en.png)
 
 ## What it does
 
-- **Containers, cargo, solve.** Editable tables for container types (size, copies, cost, payload) and cargo types (size, pieces, weight, value, allowed rotations), a solver panel with the objective (fewest containers, highest value in one container, cheapest container mix), the time limit and the search mode, and a big Solve button.
-- **Built-in presets with sources.** ISO containers (20GP/40GP/40HQ/45HQ, reefers), Chinese truck bodies (4.2 / 6.8 / 7.6 / 9.6 / 13 / 17.5 m), EU and US trailers, pallets as load units, rail; on the cargo side China Post cartons 1-12, VDA 4500 KLT bins, Euro containers, IBC totes, Gaylord boxes, loaded pallets and US moving boxes. Every entry names its source; see `backend/stowly_backend/presets/SOURCES.md`.
-- **Save and load** projects as JSON; **import** cargo lists from CSV/XLSX (headers recognised in English and Chinese), ESICUP `thpack`/BR benchmark instances and PackingSolver `items.csv` + `bins.csv` pairs; **export** placements as CSV.
-- **3D inspection.** One scene per container: rotate, zoom, hover a box for its cargo type and position, click to select, and drag the loading-order slider to replay the packing box by box.
-- **Honest results.** Status distinguishes a proven optimum from a merely feasible packing, and value and bound are shown side by side, the same way packingsolver3d reports them.
+- **Containers and cargo tables** with lengths in mm, cm, m or inches, per-type quantities, weights, values and rotation rules (any / upright / fixed).
+- **Built-in presets with sources**: ISO 20'/40'/40' HQ/45' HQ and reefers, Chinese 4.2–17.5 m trucks, European and US trailers, EUR/GMA/Asian pallets, China Post standard cartons, VDA KLT and Euro totes, IBC tanks, Gaylord boxes, US moving boxes. Every entry cites where its dimensions come from ([`backend/stowly_backend/presets/SOURCES.md`](backend/stowly_backend/presets/SOURCES.md)).
+- **Three objectives**: pack everything into as few containers as possible, fill one container with the most valuable subset (knapsack, value defaults to volume), or choose the cheapest mix of container sizes. `box` for plain packing, `boxstacks` when stacking, weight limits or truck axle rules matter.
+- **Honest results**: the status distinguishes a *proven optimal* packing from a *feasible* one whose bound was not closed, and the value / bound pair is always shown.
+- **3D viewer** with hover and click inspection, a loading-order slider, and one scene per container.
+- **Files**: Stowly project JSON (`stowly/1`), CSV / XLSX cargo lists with Chinese or English headers, ESICUP `thpack` / BR text instances, PackingSolver `items.csv` + `bins.csv` pairs; placement export as CSV.
+- **Chinese by default, English one click away.** Every label exists in both languages.
 
-## Architecture
+## Install
+
+Download the package for your platform from the [Releases](https://github.com/HansBug/stowly/releases) page (every build is also attached to the [Build Desktop](https://github.com/HansBug/stowly/actions/workflows/build.yaml) workflow runs as an artifact).
+
+| Platform | Package | Notes |
+|---|---|---|
+| Linux x86_64, Ubuntu 20.04 or newer (glibc ≥ 2.31) | `.deb`, `.AppImage` | The `.deb` installs to `/opt/Stowly` and sets the sandbox helper permissions. On distributions that restrict unprivileged user namespaces (Ubuntu 24.04 and later) the AppImage needs `--no-sandbox`. |
+| Windows 10 / 11 x64 | NSIS `.exe` installer | Unsigned: Windows SmartScreen shows "unknown publisher" the first time. |
+| macOS 12 or newer, Apple Silicon and Intel | `.dmg` | Unsigned: open with right-click → *Open*, or run `xattr -dr com.apple.quarantine /Applications/Stowly.app` once. |
+
+Each package bundles a relocatable CPython 3.12 with the backend and `packingsolver3d`; nothing else needs to be installed. The Build Desktop workflow installs the `.deb` into a bare `ubuntu:20.04` container without Python or Node and runs the app's self-test there before an artifact is published.
+
+## Quick start
+
+1. Start Stowly and press **Demo** in the toolbar: a 40' HQ container with three sizes of postal cartons, loaded EUR pallets and IBC tanks, more cargo than fits.
+2. Look at the **Containers** and **Cargo** tabs; edit any cell, or add rows by hand or **From presets**.
+3. Open **Solver**: `box`, objective *Knapsack: highest value*, 10 seconds. The line under the settings compares total cargo volume with container capacity.
+4. Press **Solve**. The 3D view fills up; the result panel reports the status (`feasible (not proven optimal)` for the demo), value / bound, containers used, pieces packed and utilisation, followed by a per-cargo count of what was left out and the placement list.
+5. **Export CSV** writes one row per placed piece (container, item, position, placed size, rotation). **Save project** keeps the whole setup as JSON for next time.
+
+Switch the length unit (mm / cm / m / in) in the toolbar at any moment; values convert, the solver always receives millimetres. Switch the language with the 中文 / EN toggle.
+
+## Files
+
+| Import | Recognised by | Notes |
+|---|---|---|
+| Stowly project | `.json` with `"schema": "stowly/1"` | Full round trip of containers, cargo and settings. |
+| Cargo list | `.csv` / `.xlsx` with a header row | Columns are matched by name in Chinese or English: name / 名称, length / 长, width / 宽, height / 高, quantity / 数量, weight / 重量, value / 价值, rotation / 旋转. Units in the header such as `Length (mm)` are ignored; the unit is chosen in the import dialog. Appended to the current cargo. |
+| ESICUP `thpack` / BR | `.txt` / `.dat` / `.thpack` | Bischoff–Ratcliff container-loading instances; pick the instance index in the dialog. Replaces the project. |
+| PackingSolver | `items.csv` + `bins.csv` selected together, or a single `items.csv` | The CSV layout of the upstream solver, including `ROTATION_*` flags. |
+
+Export writes placements as CSV: `bin, bin_name, bin_copies, item, item_name, x, y, z, lx, ly, lz, rotation`, all lengths in millimetres, positions being the lower corner in the container's coordinate system (x along the length, y across, z up).
+
+## How it works
 
 ```text
-Electron shell (main process)     spawns and supervises the Python backend, owns file dialogs
-   |  contextBridge (window.stowly)
-React + Ant Design + Three.js     the workbench, built with Vite; i18n via react-i18next (zh-CN default, en-US)
-   |  HTTP on 127.0.0.1, random port, per-session token
-Python backend (FastAPI)          presets, importers, packingsolver3d solves in a worker thread
+Electron main process ──spawn──▶ python -m stowly_backend --port 0 --token …   (bundled CPython)
+        │  READY {"host","port"}  ◀──────────────┘
+        │
+        └─ BrowserWindow (React + Ant Design + Three.js)  ──HTTP + X-Stowly-Token──▶  FastAPI on 127.0.0.1
+                                                                                          └─ packingsolver3d (box / boxstacks)
 ```
 
-The renderer never talks to Node directly; the preload exposes a handful of typed functions. The backend is plain Python and can be run and tested on its own.
+The main process starts the backend, waits for its `READY` line and hands the port and a random token to the renderer. The renderer talks plain HTTP to the backend (presets, import, solve jobs, export); the token keeps other local programs out. Solves run in a worker thread and are polled, so the interface stays responsive. The project model stores millimetres and kilograms; the interface converts for display. Statuses come from packingsolver3d unchanged: `optimal` only when the achieved value meets the reported bound.
 
 ## Development
 
@@ -35,35 +73,33 @@ The renderer never talks to Node directly; the preload exposes a handful of type
 ```shell
 make run            # Electron with hot reload; the backend runs from .venv (or STOWLY_PYTHON)
 make test           # backend pytest with coverage, frontend vitest with coverage, typecheck
+make probe          # build, then drive the app with Playwright: screenshots and console errors under /tmp/stowly_ui
 make build          # renderer/main/preload bundles into out/
 ```
 
-Without make: `python -m venv .venv && .venv/bin/pip install -e "./backend[test]"`, then `npm ci`, `npm run typecheck`, `npm run test:coverage`, `npm run dev`; backend tests are `cd backend && pytest --cov`.
+Requirements: Node 20 or 22, Python 3.10 or newer, GNU make. Without make: `python -m venv .venv && .venv/bin/pip install -e "./backend[test]"`, then `npm ci`, `npm run typecheck`, `npm run test:coverage`, `npm run dev`; backend tests are `cd backend && pytest --cov`.
+
+On Linux, `make run` restores a missing Electron binary, picks the desktop's `DISPLAY` when the shell has none, and passes `--noSandbox` on hosts that restrict unprivileged user namespaces.
 
 ## Packaging
 
 ```shell
 make dist-dir       # relocatable CPython 3.12 + backend + packingsolver3d into resources/python, then dist/<platform>-unpacked
 make dist           # same, plus the installers: AppImage/deb, NSIS installer, DMG
+make smoke          # dist-dir, then the packaged app's self-test (stowly --smoke) with a JSON report
 ```
 
-Targets: Linux x64 (glibc 2.31 and newer, i.e. Ubuntu 20.04+), Windows x64 (10/11), macOS arm64 and x64 (12+). The `Build Desktop` workflow produces all of them on native runners.
+`stowly --smoke[=report.json]` is built into the app: it starts the bundled interpreter, calls the HTTP API, runs a small solve, checks that the renderer loaded and reached the backend, writes a report and exits 0 or 1. The Build Desktop workflow runs it on all four targets (Linux inside bare `ubuntu:20.04` and `ubuntu:22.04` containers, Windows and macOS with the runners' toolchains hidden from `PATH`), uploads installers and reports as artifacts, and turns a `v*` tag into a GitHub release.
 
-On Ubuntu 24.04 and other distributions that restrict unprivileged user namespaces, the unpacked build and the AppImage abort with a `chrome-sandbox` message; install the `.deb` (it sets the helper's permissions) or start the binary with `--no-sandbox`. `make run` handles the same hurdle for development automatically.
+## Compatibility
 
-## License
+| Component | Supported | Why |
+|---|---|---|
+| Linux | x86_64, glibc ≥ 2.31 (Ubuntu 20.04+, Debian 11+, RHEL 9+) | Electron 44 requires glibc 2.31; the bundled CPython needs only 2.17. Verified by the `ubuntu:20.04` container test. |
+| Windows | 10 / 11, x64 | Electron 44 dropped Windows 7–8.1. |
+| macOS | 12 Monterey or newer, arm64 and x64 | Electron 44 and python-build-standalone 3.12 floors. |
+| Development | Node 20 / 22, Python 3.10 / 3.12 | The Code Test workflow runs both sides on Linux, Windows and macOS with coverage. |
 
-MIT. PackingSolver is MIT licensed by Florian Fontan; see the packingsolver3d NOTICE for the exact build configuration.
+## License and credits
 
----
-
-## 中文说明
-
-Stowly 是一个三维装载规划桌面工具：描述你手上的集装箱、货车或托盘和要装的货物，交给 [packingsolver3d](https://github.com/HansBug/packingsolver3d)（PackingSolver 的 `box` / `boxstacks` 引擎）在时间预算内求解，然后在交互式 3D 视图里检查结果。界面默认中文，一键切换英文。
-
-**当前状态：原型。** 能求解、能画、能导入导出和存取项目；重量分布、稳定性、装载顺序约束等还没有做。
-
-- **内置预设**：ISO 集装箱（20GP/40GP/40HQ/45HQ、冷藏箱）、国内 4.2/6.8/7.6/9.6/13/17.5 米货车、欧美挂车、托盘、铁路；货物侧有邮政 1–12 号纸箱、VDA 4500 KLT 周转箱、欧标周转箱、IBC 吨桶、Gaylord 大箱、整托和美式搬家箱，每条都标注来源（`backend/stowly_backend/presets/SOURCES.md`）。数值是公开的典型内尺寸，实际以设备铭牌和行驶证为准。
-- **数据进出**：项目保存为 JSON；导入 CSV/XLSX 货物清单（中英文列名自动识别）、ESICUP thpack/BR 基准实例、PackingSolver 的 items.csv + bins.csv；导出摆放 CSV。
-- **求解与检查**：目标可选"容器最少 / 价值最大 / 成本最低"，设时间上限；结果区分"已证明最优"与"可行解"，目标值与界并列显示；3D 视图可旋转缩放、悬停查看、点击选中、拖动装载顺序滑条逐件回放。
-- **打包分发**：Linux x64（Ubuntu 20.04 及以上）、Windows x64、macOS；随包携带独立的 CPython 与后端，目标机器无需安装 Python 或联网。
+MIT, see [LICENSE](LICENSE). Stowly is an independent project built on [packingsolver3d](https://github.com/HansBug/packingsolver3d) and, through it, on [PackingSolver](https://github.com/fontanf/packingsolver) by Florian Fontan (MIT). Preset dimensions are typical public values and are cited in [`SOURCES.md`](backend/stowly_backend/presets/SOURCES.md); always check the plate of the actual equipment.
