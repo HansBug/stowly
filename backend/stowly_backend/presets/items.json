@@ -1,0 +1,512 @@
+[
+ {
+  "id": "post-cn-1",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 1 号纸箱 530×290×370",
+   "en": "China Post carton No.1 530x290x370"
+  },
+  "x": 530,
+  "y": 290,
+  "z": 370,
+  "weight": null,
+  "note": {
+   "zh": "5 层",
+   "en": "5-ply"
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-2",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 2 号纸箱 530×230×290",
+   "en": "China Post carton No.2 530x230x290"
+  },
+  "x": 530,
+  "y": 230,
+  "z": 290,
+  "weight": null,
+  "note": {
+   "zh": "5 层",
+   "en": "5-ply"
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-3",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 3 号纸箱 430×210×270",
+   "en": "China Post carton No.3 430x210x270"
+  },
+  "x": 430,
+  "y": 210,
+  "z": 270,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-4",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 4 号纸箱 350×190×230",
+   "en": "China Post carton No.4 350x190x230"
+  },
+  "x": 350,
+  "y": 190,
+  "z": 230,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-5",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 5 号纸箱 290×170×190",
+   "en": "China Post carton No.5 290x170x190"
+  },
+  "x": 290,
+  "y": 170,
+  "z": 190,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-6",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 6 号纸箱 260×150×180",
+   "en": "China Post carton No.6 260x150x180"
+  },
+  "x": 260,
+  "y": 150,
+  "z": 180,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-7",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 7 号纸箱 230×130×160",
+   "en": "China Post carton No.7 230x130x160"
+  },
+  "x": 230,
+  "y": 130,
+  "z": 160,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-8",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 8 号纸箱 210×110×140",
+   "en": "China Post carton No.8 210x110x140"
+  },
+  "x": 210,
+  "y": 110,
+  "z": 140,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-9",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 9 号纸箱 195×105×135",
+   "en": "China Post carton No.9 195x105x135"
+  },
+  "x": 195,
+  "y": 105,
+  "z": 135,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-10",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 10 号纸箱 175×95×115",
+   "en": "China Post carton No.10 175x95x115"
+  },
+  "x": 175,
+  "y": 95,
+  "z": 115,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-11",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 11 号纸箱 145×85×105",
+   "en": "China Post carton No.11 145x85x105"
+  },
+  "x": 145,
+  "y": 85,
+  "z": 105,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-12",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政 12 号纸箱 130×80×90",
+   "en": "China Post carton No.12 130x80x90"
+  },
+  "x": 130,
+  "y": 80,
+  "z": 90,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "post-cn-xl",
+  "category": "postal-carton-cn",
+  "name": {
+   "zh": "邮政特大号搬家纸箱 600×500×400",
+   "en": "China Post extra-large moving carton 600x500x400"
+  },
+  "x": 600,
+  "y": 500,
+  "z": 400,
+  "weight": null,
+  "note": {
+   "zh": "5 层",
+   "en": "5-ply"
+  },
+  "source": "China Post standard carton sizes 1-12 (邮政标准纸箱), widely published by carton makers (纸箱网 cnzhixiang.com); sizes are outer dimensions"
+ },
+ {
+  "id": "klt-6429",
+  "category": "klt-vda",
+  "name": {
+   "zh": "R-KLT 6429 (600×400×280)",
+   "en": "R-KLT 6429 (600x400x280)"
+  },
+  "x": 600,
+  "y": 400,
+  "z": 280,
+  "weight": 2.8,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "VDA 4500 small load carrier (KLT) standard; outer dimensions of the R-KLT / RL-KLT family"
+ },
+ {
+  "id": "klt-6428",
+  "category": "klt-vda",
+  "name": {
+   "zh": "R-KLT 6428 (600×400×280，加固)",
+   "en": "RL-KLT 6280 (600x400x280)"
+  },
+  "x": 600,
+  "y": 400,
+  "z": 280,
+  "weight": 2.5,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "VDA 4500 small load carrier (KLT) standard; outer dimensions of the R-KLT / RL-KLT family"
+ },
+ {
+  "id": "klt-4329",
+  "category": "klt-vda",
+  "name": {
+   "zh": "R-KLT 4329 (400×300×280)",
+   "en": "R-KLT 4329 (400x300x280)"
+  },
+  "x": 400,
+  "y": 300,
+  "z": 280,
+  "weight": 1.5,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "VDA 4500 small load carrier (KLT) standard; outer dimensions of the R-KLT / RL-KLT family"
+ },
+ {
+  "id": "klt-4315",
+  "category": "klt-vda",
+  "name": {
+   "zh": "R-KLT 4315 (400×300×147)",
+   "en": "R-KLT 4315 (400x300x147)"
+  },
+  "x": 400,
+  "y": 300,
+  "z": 147,
+  "weight": 1.1,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "VDA 4500 small load carrier (KLT) standard; outer dimensions of the R-KLT / RL-KLT family"
+ },
+ {
+  "id": "klt-3215",
+  "category": "klt-vda",
+  "name": {
+   "zh": "R-KLT 3215 (300×200×147)",
+   "en": "R-KLT 3215 (300x200x147)"
+  },
+  "x": 300,
+  "y": 200,
+  "z": 147,
+  "weight": 0.7,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "VDA 4500 small load carrier (KLT) standard; outer dimensions of the R-KLT / RL-KLT family"
+ },
+ {
+  "id": "klt-6147",
+  "category": "klt-vda",
+  "name": {
+   "zh": "R-KLT 6147 (600×400×147)",
+   "en": "R-KLT 6147 (600x400x147)"
+  },
+  "x": 600,
+  "y": 400,
+  "z": 147,
+  "weight": 2.0,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "VDA 4500 small load carrier (KLT) standard; outer dimensions of the R-KLT / RL-KLT family"
+ },
+ {
+  "id": "euro-600x400x320",
+  "category": "euro-container",
+  "name": {
+   "zh": "欧标周转箱 600×400×320",
+   "en": "Euro stacking container 600x400x320"
+  },
+  "x": 600,
+  "y": 400,
+  "z": 320,
+  "weight": 2.2,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "Euro container (Eurobehälter) footprint series 600 x 400 / 400 x 300 per DIN EN 13199 / VDA"
+ },
+ {
+  "id": "euro-400x300x220",
+  "category": "euro-container",
+  "name": {
+   "zh": "欧标周转箱 400×300×220",
+   "en": "Euro stacking container 400x300x220"
+  },
+  "x": 400,
+  "y": 300,
+  "z": 220,
+  "weight": 1.0,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "Euro container footprint series 600 x 400 / 400 x 300"
+ },
+ {
+  "id": "euro-beer-crate",
+  "category": "euro-container",
+  "name": {
+   "zh": "啤酒周转箱 400×300×300 (20 瓶)",
+   "en": "Beer crate 400x300x300 (20 bottles)"
+  },
+  "x": 400,
+  "y": 300,
+  "z": 300,
+  "weight": 18.0,
+  "note": {
+   "zh": "满载约 18 kg",
+   "en": "About 18 kg loaded"
+  },
+  "source": "Common German 20-bottle beverage crate footprint 400 x 300 mm"
+ },
+ {
+  "id": "ibc-1000",
+  "category": "load-unit",
+  "name": {
+   "zh": "IBC 吨桶 1000 L (1200×1000×1150)",
+   "en": "IBC tote 1000 L (1200x1000x1150)"
+  },
+  "x": 1200,
+  "y": 1000,
+  "z": 1150,
+  "weight": 1100.0,
+  "note": {
+   "zh": "满载约 1.1 t",
+   "en": "About 1.1 t loaded"
+  },
+  "source": "Standard 1000 L composite IBC on 1200 x 1000 pallet base; loaded mass about 1.1 t"
+ },
+ {
+  "id": "gaylord-48x40x36",
+  "category": "load-unit",
+  "name": {
+   "zh": "Gaylord 大纸箱 48×40×36 in (1219×1016×914)",
+   "en": "Gaylord box 48x40x36 in (1219x1016x914)"
+  },
+  "x": 1219,
+  "y": 1016,
+  "z": 914,
+  "weight": 600.0,
+  "note": {
+   "zh": "含托盘的整体装载单元",
+   "en": "Whole load unit including its pallet"
+  },
+  "source": "Standard US Gaylord bulk box on a 48 x 40 pallet footprint"
+ },
+ {
+  "id": "eur1-pallet-load-1200",
+  "category": "load-unit",
+  "name": {
+   "zh": "欧标托盘整托 1200×800×1200",
+   "en": "Loaded EUR 1 pallet 1200x800x1200"
+  },
+  "x": 1200,
+  "y": 800,
+  "z": 1200,
+  "weight": 600.0,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "EUR 1 pallet footprint with a customary 1.2 m load height"
+ },
+ {
+  "id": "eur1-pallet-load-1800",
+  "category": "load-unit",
+  "name": {
+   "zh": "欧标托盘整托 1200×800×1800",
+   "en": "Loaded EUR 1 pallet 1200x800x1800"
+  },
+  "x": 1200,
+  "y": 800,
+  "z": 1800,
+  "weight": 900.0,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "EUR 1 pallet footprint with a customary 1.8 m load height"
+ },
+ {
+  "id": "gma-pallet-load-1500",
+  "category": "load-unit",
+  "name": {
+   "zh": "美标托盘整托 1219×1016×1500",
+   "en": "Loaded GMA pallet 1219x1016x1500"
+  },
+  "x": 1219,
+  "y": 1016,
+  "z": 1500,
+  "weight": 800.0,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "GMA pallet footprint with a customary 60 in load height"
+ },
+ {
+  "id": "us-moving-small",
+  "category": "moving-box-us",
+  "name": {
+   "zh": "美式小号搬家箱 16×12×12 in",
+   "en": "US small moving box 16x12x12 in (1.5 cu ft)"
+  },
+  "x": 406,
+  "y": 305,
+  "z": 305,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "Standard US moving box sizes (1.5 / 3.0 / 4.5 cubic feet) sold by U-Haul, Home Depot and others"
+ },
+ {
+  "id": "us-moving-medium",
+  "category": "moving-box-us",
+  "name": {
+   "zh": "美式中号搬家箱 18×18×16 in",
+   "en": "US medium moving box 18x18x16 in (3.0 cu ft)"
+  },
+  "x": 457,
+  "y": 457,
+  "z": 406,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "Standard US moving box sizes"
+ },
+ {
+  "id": "us-moving-large",
+  "category": "moving-box-us",
+  "name": {
+   "zh": "美式大号搬家箱 18×18×24 in",
+   "en": "US large moving box 18x18x24 in (4.5 cu ft)"
+  },
+  "x": 457,
+  "y": 457,
+  "z": 610,
+  "weight": null,
+  "note": {
+   "zh": "",
+   "en": ""
+  },
+  "source": "Standard US moving box sizes"
+ }
+]

@@ -1,0 +1,48 @@
+name: Build Desktop
+
+on:
+  push:
+    tags: ['v*']
+    branches: ['ci/**']
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: linux-x64
+          - os: windows-2022
+            target: win-x64
+          - os: macos-14
+            target: mac-arm64
+          - os: macos-15-intel
+            target: mac-x64
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Bundle CPython with the backend
+        run: node scripts/prepare-python.mjs --target ${{ matrix.target }}
+      - name: Build renderer and main
+        run: npm run build
+      - name: Package
+        run: npx electron-builder --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stowly-${{ matrix.target }}
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
