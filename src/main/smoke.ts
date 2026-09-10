@@ -35,6 +35,8 @@ export interface SmokeOptions {
   location: PythonLocation
   /** Resolves true once the renderer shows the app and has received the presets from the backend. */
   renderer: () => Promise<boolean>
+  /** Called when the renderer check fails: what the window shows and what its console said, for the report. */
+  rendererDetail?: () => Promise<string>
   fetchImpl?: typeof fetch
   timeoutMs?: number
   sleep?: (ms: number) => Promise<void>
@@ -82,7 +84,10 @@ export async function smokeTest(opts: SmokeOptions): Promise<SmokeReport> {
   } catch (err) { fail(`solve: ${(err as Error).message}`) }
   try {
     report.renderer = await opts.renderer()
-    if (!report.renderer) fail('renderer did not show the app with presets loaded')
+    if (!report.renderer) {
+      const detail = opts.rendererDetail ? await opts.rendererDetail().catch((err: Error) => `detail unavailable: ${err.message}`) : ''
+      fail(`renderer did not show the app with presets loaded${detail ? `: ${detail}` : ''}`)
+    }
   } catch (err) { fail(`renderer: ${(err as Error).message}`) }
   report.ok = report.errors.length === 0
   return report

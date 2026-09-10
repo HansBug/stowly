@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const electron = vi.hoisted(() => {
   const listeners: Record<string, (...args: unknown[]) => unknown> = {}
   const handlers: Record<string, (...args: unknown[]) => unknown> = {}
-  const webContents = { setWindowOpenHandler: vi.fn(), isLoading: vi.fn(() => false), executeJavaScript: vi.fn(async () => true) }
+  const webContents = { setWindowOpenHandler: vi.fn(), isLoading: vi.fn(() => false), executeJavaScript: vi.fn(async () => true), on: vi.fn() }
   const win = { loadFile: vi.fn(), loadURL: vi.fn(), webContents }
   const BrowserWindow = Object.assign(vi.fn(function () { return win }), { getAllWindows: vi.fn(() => []) })
   const app = { isPackaged: false, whenReady: vi.fn(() => Promise.resolve()), on: vi.fn((name: string, fn: (...args: unknown[]) => unknown) => { listeners[name] = fn }), quit: vi.fn(), exit: vi.fn(), getVersion: () => '0.1.0' }
@@ -82,10 +82,22 @@ describe('main process entry', () => {
   it('exits non-zero when the smoke test fails, and gives up on a renderer that never settles', async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'stowly-smoke-'))
     process.argv = ['stowly', `--smoke=${path.join(dir, 'r.json')}`]
-    vi.doMock('./smoke', () => ({ smokeTest: vi.fn(async () => ({ ok: false, errors: ['renderer'] })) }))
-    const { rendererReady } = await import('./index')
+    vi.doMock('./smoke', () => ({ smokeTest: vi.fn(async (opts: { rendererDetail: () => Promise<string> }) => ({ ok: false, errors: [await opts.rendererDetail()] })) }))
+    const { rendererReady, rendererDetail, watchRendererConsole } = await import('./index')
     await flush()
     expect(electron.app.exit).toHaveBeenCalledWith(1)
+    // console capture: only errors and warnings, in either event shape
+    const sink: string[] = []
+    const win = { webContents: { on: vi.fn(), executeJavaScript: vi.fn(async () => 'Stowly body') } }
+    watchRendererConsole(win as never, sink)
+    const handler = win.webContents.on.mock.calls[0][1] as (event: unknown) => void
+    handler({ level: 'error', message: 'WebGL context lost' })
+    handler({ level: 2, message: 'warned' })
+    handler({ level: 'info', message: 'ignored' })
+    expect(sink).toEqual(['error: WebGL context lost', '2: warned'])
+    expect(await rendererDetail(win as never, sink)).toBe('console: error: WebGL context lost | 2: warned; body: "Stowly body"')
+    const broken = { webContents: { on: vi.fn(), executeJavaScript: vi.fn(async () => { throw new Error('crashed') }) } }
+    expect(await rendererDetail(broken as never, [])).toBe('console: none; body: "(no body: crashed)"')
     const loading = { webContents: { isLoading: () => true, executeJavaScript: vi.fn(async () => true) } }
     expect(await rendererReady(loading as never, 5, 1)).toBe(false)
     const blank = { webContents: { isLoading: () => false, executeJavaScript: vi.fn(async () => false) } }

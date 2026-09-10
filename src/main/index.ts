@@ -50,6 +50,21 @@ export function smokeReportPath(argv: string[]): string | null {
   return flag.includes('=') ? flag.slice(flag.indexOf('=') + 1) : path.join(process.cwd(), 'stowly-smoke.json')
 }
 
+/** Renderer console errors and warnings, kept for the smoke report (Electron 44 delivers them on the event object). */
+export function watchRendererConsole(win: Pick<BrowserWindow, 'webContents'>, sink: string[]): void {
+  win.webContents.on('console-message', (event: unknown) => {
+    const e = event as { level?: string | number; message?: string }
+    const level = String(e.level ?? '')
+    if (['error', 'warning', '2', '3'].includes(level)) sink.push(`${level}: ${e.message ?? ''}`.slice(0, 300))
+  })
+}
+
+/** What the window shows plus the last console errors, for a failed renderer check. */
+export async function rendererDetail(win: Pick<BrowserWindow, 'webContents'>, consoleSink: string[]): Promise<string> {
+  const body = await win.webContents.executeJavaScript('document.body.innerText.slice(0, 600)').catch((err: Error) => `(no body: ${err.message})`)
+  return `console: ${consoleSink.slice(-10).join(' | ') || 'none'}; body: ${JSON.stringify(body)}`
+}
+
 /** True once the renderer has drawn the app and enabled the preset buttons, which only happens after it fetched the presets. */
 export async function rendererReady(win: Pick<BrowserWindow, 'webContents'>, timeoutMs = 60000, sleepMs = 500): Promise<boolean> {
   const deadline = Date.now() + timeoutMs
@@ -77,7 +92,12 @@ app.whenReady().then(async () => {
   })
   const reportPath = smokeReportPath(process.argv)
   if (reportPath) {
-    const report = await smokeTest({ info: backend?.current ?? null, startupError, log: backend?.log ?? [], location: location!, renderer: () => rendererReady(win) })
+    const consoleSink: string[] = []
+    watchRendererConsole(win, consoleSink)
+    const report = await smokeTest({
+      info: backend?.current ?? null, startupError, log: backend?.log ?? [], location: location!,
+      renderer: () => rendererReady(win), rendererDetail: () => rendererDetail(win, consoleSink)
+    })
     await writeFile(reportPath, JSON.stringify(report, null, 2), 'utf-8')
     console.log(`SMOKE ${report.ok ? 'OK' : 'FAILED'} ${reportPath}`)
     backend?.stop()

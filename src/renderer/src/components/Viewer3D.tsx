@@ -1,4 +1,4 @@
-import { Button, Empty, Segmented, Slider, Space, Tag, Typography } from 'antd'
+import { Alert, Button, Empty, Segmented, Slider, Space, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Project } from '../lib/project'
@@ -20,6 +20,7 @@ export function Viewer3D({ project, result, selectedBin, onSelectBin }: Props) {
   const [hovered, setHovered] = useState<BoxDescriptor | null>(null)
   const [selected, setSelected] = useState<BoxDescriptor | null>(null)
   const [visible, setVisible] = useState<number | null>(null)
+  const [unavailable, setUnavailable] = useState<string | null>(null)
   // Without a result the first container is drawn empty, so the user sees what they are editing.
   const preview = project.bins[0]
   const bin: PackedBin | null = result
@@ -29,7 +30,14 @@ export function Viewer3D({ project, result, selectedBin, onSelectBin }: Props) {
 
   useEffect(() => {
     if (!container.current) return
-    const scene = new SceneController(container.current, { onHover: setHovered, onSelect: setSelected })
+    let scene: SceneController
+    try {
+      scene = new SceneController(container.current, { onHover: setHovered, onSelect: setSelected })
+    } catch (err) {
+      // No WebGL context (virtual machines, remote desktops, blocked GPUs): the tables, solver and exports must keep working.
+      setUnavailable(err instanceof Error ? err.message : String(err))
+      return
+    }
     controller.current = scene
     const observer = new ResizeObserver(() => scene.resize())
     observer.observe(container.current)
@@ -65,7 +73,8 @@ export function Viewer3D({ project, result, selectedBin, onSelectBin }: Props) {
         <Button size="small" onClick={() => controller.current?.setBin(bin, colors)}>{t('viewer.reset')}</Button>
       </Space>
       <div ref={container} data-testid="viewer-canvas" style={{ flex: 1, minHeight: 240, position: 'relative' }}>
-        {!bin ? <Empty description={t('viewer.noBin')} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} /> : null}
+        {unavailable ? <Alert type="warning" showIcon message={t('viewer.unavailable')} description={unavailable} style={{ margin: 12 }} /> : null}
+        {!bin && !unavailable ? <Empty description={t('viewer.noBin')} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} /> : null}
       </div>
       {bin && result ? (
         <div style={{ padding: '4px 12px 8px' }}>

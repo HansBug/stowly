@@ -8,14 +8,21 @@ import { Viewer3D } from './Viewer3D'
 
 const fake = vi.hoisted(() => {
   const scenes: FakeScene[] = []
+  const state = { throwNext: false }
   class FakeScene {
     setBin = vi.fn()
     setVisibleCount = vi.fn()
     resize = vi.fn()
     dispose = vi.fn()
-    constructor(public container: HTMLElement, public options: SceneOptions) { scenes.push(this) }
+    constructor(public container: HTMLElement, public options: SceneOptions) {
+      if (state.throwNext) {
+        state.throwNext = false
+        throw new Error('Error creating WebGL context.')
+      }
+      scenes.push(this)
+    }
   }
-  return { scenes, FakeScene }
+  return { scenes, state, FakeScene }
 })
 vi.mock('../three/scene', () => ({ SceneController: fake.FakeScene }))
 
@@ -55,5 +62,14 @@ describe('Viewer3D', () => {
     expect(screen.getByText(/邮政 1 号纸箱 @/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '重置视角' }))
     expect(scene.setBin).toHaveBeenCalledTimes(2)
+  })
+
+  it('degrades to a notice when WebGL is unavailable', () => {
+    fake.state.throwNext = true
+    const { project, result } = solvedDemo()
+    render(<Viewer3D project={project} result={result} selectedBin={0} onSelectBin={vi.fn()} />)
+    expect(screen.getByText(/三维视图不可用/)).toBeInTheDocument()
+    expect(screen.getByText('Error creating WebGL context.')).toBeInTheDocument()
+    expect(screen.queryByText('没有可显示的容器')).not.toBeInTheDocument()
   })
 })
