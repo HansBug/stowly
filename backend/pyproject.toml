@@ -33,7 +33,6 @@ addopts = "-q"
 
 [tool.coverage.run]
 source = ["stowly_backend"]
-omit = ["stowly_backend/__main__.py"]
 
 [tool.coverage.report]
 show_missing = true

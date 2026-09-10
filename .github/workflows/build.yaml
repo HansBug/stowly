@@ -27,9 +27,11 @@ jobs:
             target: linux-x64
             builder: --linux --x64
             unpacked: dist/linux-unpacked
+          # No AppImage on arm64: electron-builder's arm64 AppImage runtime links an unversioned libz.so that distributions do
+          # not ship ("error while loading shared libraries: libz.so"); the portable tar.gz and the .deb cover arm64.
           - os: ubuntu-22.04-arm
             target: linux-arm64
-            builder: --linux --arm64
+            builder: --linux deb tar.gz --arm64
             unpacked: dist/linux-arm64-unpacked
           - os: windows-2022
             target: win-x64
@@ -106,8 +108,10 @@ jobs:
             xvfb-run -a "$app" --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-$TARGET-portable-targz-ubuntu2204.json || status=$?
             cat /dist/smoke-$TARGET-portable-targz-ubuntu2204.json || true
             [ "$status" = 0 ]
-            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-$TARGET-appimage-ubuntu2204.json || status=$?
-            cat /dist/smoke-$TARGET-appimage-ubuntu2204.json || true
+            if ls /dist/*.AppImage > /dev/null 2>&1; then
+              xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-$TARGET-appimage-ubuntu2204.json || status=$?
+              cat /dist/smoke-$TARGET-appimage-ubuntu2204.json || true
+            fi
             exit $status
           '
 
