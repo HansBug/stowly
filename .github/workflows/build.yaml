@@ -156,10 +156,12 @@ jobs:
             foreach ($dir in @($installDir, "$env:LOCALAPPDATA\Programs", "$env:ProgramFiles", "${env:ProgramFiles(x86)}")) { Write-Host "== $dir"; Get-ChildItem $dir -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host }
             foreach ($hive in @("HKCU:", "HKLM:")) { Get-ItemProperty "$hive\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*towly*" } | Select-Object DisplayName, InstallLocation, UninstallString | Format-List | Out-String | Write-Host }
             Write-Host "installer: $($setup.FullName) $((Get-Item $setup.FullName).Length) bytes"
+            Write-Host "== install-debug.txt"; Get-Content "$installDir\install-debug.txt" -ErrorAction SilentlyContinue | Write-Host
             throw "installed Stowly.exe not found after the silent install"
           }
           $installedExe = Find-Installed
           Write-Host "installed at $installedExe"
+          Get-Content (Join-Path (Split-Path $installedExe) "install-debug.txt") -ErrorAction SilentlyContinue | Write-Host
           Stop-Process -Name Stowly -ErrorAction SilentlyContinue   # in case the installer launched the app
           Invoke-Smoke $installedExe "installer-nsis"
 
