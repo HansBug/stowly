@@ -140,31 +140,46 @@ jobs:
       - name: Experiment with alternative NSIS toolsets for the arm64 installer
         if: matrix.target == 'win-arm64'
         continue-on-error: true
+        timeout-minutes: 40
         shell: pwsh
         run: |
           $ErrorActionPreference = "Continue"
+          function Run-WithTimeout($file, $arguments, $seconds, $label) {
+            $p = Start-Process -FilePath $file -ArgumentList $arguments -PassThru -NoNewWindow
+            if (-not $p.WaitForExit($seconds * 1000)) {
+              Write-Host "$label: still running after $seconds s; processes:"
+              Get-Process | Where-Object { $_.Name -match "towly|nsis|makensis|node|electron|Setup|installer" } | Select-Object Name, Id, StartTime | Format-Table | Out-String | Write-Host
+              Get-Process | Where-Object { $_.Name -match "towly|nsis|makensis|Setup|installer" } | Stop-Process -Force -ErrorAction SilentlyContinue
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+              return 124
+            }
+            return $p.ExitCode
+          }
           $variants = @(
-            @{ name = "nsis312";      args = @("-c.toolsets.nsis=1.2.1") },
-            @{ name = "zip";          args = @("-c.nsis.useZip=true") },
-            @{ name = "nsis312-zip";  args = @("-c.toolsets.nsis=1.2.1", "-c.nsis.useZip=true") }
+            @{ name = "zip";          args = "-c.nsis.useZip=true" },
+            @{ name = "nsis312";      args = "-c.toolsets.nsis=1.2.1" },
+            @{ name = "nsis312-zip";  args = "-c.toolsets.nsis=1.2.1 -c.nsis.useZip=true" }
           )
           foreach ($v in $variants) {
             $out = "$PWD\dist-exp-$($v.name)"
-            Write-Host "===== variant $($v.name): $($v.args -join ' ')"
-            npx electron-builder --win nsis --arm64 --publish never "-c.directories.output=$out" @($v.args) 2>&1 | Select-Object -Last 5
+            Write-Host "===== variant $($v.name): $($v.args)"
+            $code = Run-WithTimeout "cmd.exe" "/c npx electron-builder --win nsis --arm64 --publish never -c.directories.output=$out $($v.args) > $out.build.log 2>&1" 900 "build $($v.name)"
+            Write-Host "build exit $code"; Get-Content "$out.build.log" -ErrorAction SilentlyContinue | Select-Object -Last 8 | Write-Host
             $setup = Get-ChildItem "$out\*-installer.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
             if (-not $setup) { Write-Host "no installer produced"; continue }
             $installDir = "$out\installed"
-            $i = Start-Process -FilePath $setup.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
-            Start-Sleep -Seconds 20
-            Write-Host "installer exit $($i.ExitCode); files in ${installDir}:"
+            $code = Run-WithTimeout $setup.FullName @("/S", "/D=$installDir") 300 "install $($v.name)"
+            Start-Sleep -Seconds 15
+            Write-Host "installer exit $code; files in ${installDir}:"
             Get-ChildItem $installDir -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host
             Get-Content "$installDir\install-debug.txt" -ErrorAction SilentlyContinue | Write-Host
             if (Test-Path "$installDir\Stowly.exe") {
-              $env:Path = "C:\Windows\System32;C:\Windows"
-              $p = Start-Process -FilePath "$installDir\Stowly.exe" -ArgumentList "--smoke=$out\smoke.json" -Wait -PassThru -NoNewWindow
-              Write-Host "smoke exit $($p.ExitCode)"; Get-Content "$out\smoke.json" -ErrorAction SilentlyContinue | Select-Object -First 12 | Write-Host
+              $saved = $env:Path; $env:Path = "C:\Windows\System32;C:\Windows"
+              $code = Run-WithTimeout "$installDir\Stowly.exe" "--smoke=$out\smoke.json" 300 "smoke $($v.name)"
+              $env:Path = $saved
+              Write-Host "smoke exit $code"; Get-Content "$out\smoke.json" -ErrorAction SilentlyContinue | Select-Object -First 12 | Write-Host
             }
+            Stop-Process -Name Stowly -ErrorAction SilentlyContinue
           }
 
       # --- Windows: the portable zip extracted next to nothing, and the NSIS installer installed silently; toolchains hidden ---
