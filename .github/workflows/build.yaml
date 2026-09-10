@@ -172,7 +172,7 @@ jobs:
           $installedExe = Find-Installed
           Write-Host "installed at $installedExe"
           Stop-Process -Name Stowly -ErrorAction SilentlyContinue   # in case the installer launched the app
-          Invoke-Smoke $installedExe "installer-nsis"
+          Invoke-Smoke $installedExe "installer-exe"
 
       # --- macOS: the portable zip extracted, and the .app straight from the mounted DMG; toolchains hidden ---
       - name: Smoke test the portable zip and the DMG with the toolchains hidden (macOS)
