@@ -25,13 +25,15 @@ Stowly is a desktop workbench for three-dimensional load planning: describe the 
 
 Download the package for your platform from the [Releases](https://github.com/HansBug/stowly/releases) page (every build is also attached to the [Build Desktop](https://github.com/HansBug/stowly/actions/workflows/build.yaml) workflow runs as an artifact).
 
-| Platform | Package | Notes |
-|---|---|---|
-| Linux x86_64, Ubuntu 20.04 or newer (glibc ≥ 2.31) | `.deb`, `.AppImage` | The `.deb` installs to `/opt/Stowly` and sets the sandbox helper permissions. On distributions that restrict unprivileged user namespaces (Ubuntu 24.04 and later) the AppImage needs `--no-sandbox`. |
-| Windows 10 / 11 x64 | NSIS `.exe` installer | Unsigned: Windows SmartScreen shows "unknown publisher" the first time. |
-| macOS 12 or newer, Apple Silicon and Intel | `.dmg` | Unsigned: open with right-click → *Open*, or run `xattr -dr com.apple.quarantine /Applications/Stowly.app` once. |
+Every platform comes in two forms per architecture. The **portable** archive is extract-and-run: unpack it anywhere (a USB stick, a shared drive) and start `Stowly`; nothing is written outside your user profile. The **installer** integrates with the system (menu entry, uninstaller). File names spell it out: `Stowly-<version>-<os>-<arch>-portable.<ext>` and `Stowly-<version>-<os>-<arch>-installer.<ext>`.
 
-Each package bundles a relocatable CPython 3.12 with the backend and `packingsolver3d`; nothing else needs to be installed. The Build Desktop workflow installs the `.deb` into a bare `ubuntu:20.04` container without Python or Node and runs the app's self-test there before an artifact is published.
+| Platform | Portable (extract and run) | Installer | Notes |
+|---|---|---|---|
+| Linux x64 / arm64, glibc ≥ 2.31 (Ubuntu 20.04+, Debian 11+, RHEL 9+) | `…-linux-<arch>-portable.tar.gz` → `./stowly` | `…-linux-<arch>-installer.deb` (installs to `/opt/Stowly`), or the single-file `…-linux-<arch>.AppImage` | On distributions that restrict unprivileged user namespaces (Ubuntu 24.04+) the portable build and the AppImage need `--no-sandbox`; the `.deb` sets the sandbox helper's permissions. |
+| Windows 10 / 11, x64 / arm64 | `…-win-<arch>-portable.zip` → `Stowly.exe` | `…-win-<arch>-installer.exe` (NSIS, per-user, choose the folder) | Unsigned: SmartScreen shows "unknown publisher" the first time. |
+| macOS 12+, Apple Silicon (arm64) / Intel (x64) | `…-mac-<arch>-portable.zip` → `Stowly.app` | `…-mac-<arch>-installer.dmg` | Unsigned: open with right-click → *Open*, or run `xattr -dr com.apple.quarantine Stowly.app` once. |
+
+Each package bundles a relocatable CPython 3.12 with the backend and `packingsolver3d` for its own architecture; nothing else needs to be installed. Before a package is published, the Build Desktop workflow runs the app's self-test on it in an environment without Python or Node: the Linux packages inside bare `ubuntu:20.04` / `ubuntu:22.04` containers, the Windows and macOS packages with the runners' toolchains hidden from `PATH`.
 
 ## Quick start
 
@@ -89,14 +91,14 @@ make dist           # same, plus the installers: AppImage/deb, NSIS installer, D
 make smoke          # dist-dir, then the packaged app's self-test (stowly --smoke) with a JSON report
 ```
 
-`stowly --smoke[=report.json]` is built into the app: it starts the bundled interpreter, calls the HTTP API, runs a small solve, checks that the renderer loaded and reached the backend, writes a report and exits 0 or 1. The Build Desktop workflow runs it on all four targets (Linux inside bare `ubuntu:20.04` and `ubuntu:22.04` containers, Windows and macOS with the runners' toolchains hidden from `PATH`), uploads installers and reports as artifacts, and turns a `v*` tag into a GitHub release.
+`stowly --smoke[=report.json]` is built into the app: it starts the bundled interpreter, calls the HTTP API, runs a small solve, checks that the renderer loaded and reached the backend, writes a report and exits 0 or 1. The Build Desktop workflow builds six targets natively (Linux, Windows and macOS on x64 and arm64 runners), runs the self-test on every portable archive and every installer (Linux inside bare `ubuntu:20.04` and `ubuntu:22.04` containers, Windows and macOS with the runners' toolchains hidden from `PATH`), uploads packages and reports as artifacts, and turns a `v*` tag into a GitHub release.
 
 ## Compatibility
 
 | Component | Supported | Why |
 |---|---|---|
-| Linux | x86_64, glibc ≥ 2.31 (Ubuntu 20.04+, Debian 11+, RHEL 9+) | Electron 44 requires glibc 2.31; the bundled CPython needs only 2.17. Verified by the `ubuntu:20.04` container test. |
-| Windows | 10 / 11, x64 | Electron 44 dropped Windows 7–8.1. |
+| Linux | x64 and arm64, glibc ≥ 2.31 (Ubuntu 20.04+, Debian 11+, RHEL 9+) | Electron 44 requires glibc 2.31; the bundled CPython needs only 2.17. Verified by the `ubuntu:20.04` / `ubuntu:22.04` container tests on both architectures. |
+| Windows | 10 / 11, x64 and arm64 | Electron 44 dropped Windows 7–8.1; the arm64 build is native (no emulation), built and self-tested on a Windows 11 arm64 runner. |
 | macOS | 12 Monterey or newer, arm64 and x64 | Electron 44 and python-build-standalone 3.12 floors. |
 | Development | Node 20 / 22, Python 3.10 / 3.12 | The Code Test workflow runs both sides on Linux, Windows and macOS with coverage. |
 

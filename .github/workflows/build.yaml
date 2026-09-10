@@ -1,10 +1,11 @@
 name: Build Desktop
 
-# Packages the app for every platform, then proves each package works where nothing else is installed:
-# the Linux .deb is installed into a bare ubuntu:20.04 container (no Python, no Node), the Windows and macOS
-# builds run with a PATH that hides the runner's toolchains. `stowly --smoke` is the app's own self-test
-# (bundled interpreter, HTTP API, a small solve, the renderer talking to the backend). Artifacts carry the
-# installers and the smoke reports; a tag `v*` also publishes them as a GitHub release.
+# Packages the app for six targets (Linux, Windows, macOS; x64 and arm64), each as a portable archive (extract and run)
+# and an installer, then proves every package works where nothing else is installed: Linux packages run inside bare
+# ubuntu:20.04 / ubuntu:22.04 containers with python and node removed, Windows and macOS packages run with the runner's
+# toolchains hidden from PATH. `stowly --smoke` is the app's own self-test (bundled interpreter, HTTP API, a small solve,
+# the renderer talking to the backend). Artifacts carry the packages and the smoke reports; a tag `v*` also publishes
+# them as a GitHub release.
 
 on:
   push:
@@ -21,16 +22,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One architecture per runner: the bundled CPython is architecture-specific, so electron-builder must not
-          # cross-package the other macOS arch on the same machine.
+          # One architecture per runner, built natively: the bundled CPython is architecture-specific.
           - os: ubuntu-22.04
             target: linux-x64
-            builder: --linux
+            builder: --linux --x64
             unpacked: dist/linux-unpacked
+          - os: ubuntu-22.04-arm
+            target: linux-arm64
+            builder: --linux --arm64
+            unpacked: dist/linux-arm64-unpacked
           - os: windows-2022
             target: win-x64
-            builder: --win
+            builder: --win --x64
             unpacked: dist/win-unpacked
+          - os: windows-11-arm
+            target: win-arm64
+            builder: --win --arm64
+            unpacked: dist/win-arm64-unpacked
           - os: macos-14
             target: mac-arm64
             builder: --mac --arm64
@@ -54,77 +62,125 @@ jobs:
         run: npx electron-builder ${{ matrix.builder }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      - name: List artifacts
+      - name: Normalise architecture names
         shell: bash
-        run: ls -la dist | grep -v -E "^d|builder-"
+        # electron-builder spells the architecture per format (deb: amd64, AppImage: x86_64); every file uses x64 / arm64.
+        run: |
+          cd dist
+          for f in *amd64* *x86_64*; do
+            if [ -e "$f" ]; then mv -v "$f" "$(echo "$f" | sed -e 's/amd64/x64/' -e 's/x86_64/x64/')"; fi
+          done
+          rm -f latest*.yml
+          ls -la | grep -v -E "^d|builder-"
 
-      # --- Prove the package runs without Python or Node on the machine ---
-      - name: Smoke test the .deb in a bare Ubuntu 20.04 container
+      # --- Linux: installer (.deb) in a bare Ubuntu 20.04; portable tar.gz and AppImage in a bare Ubuntu 22.04 ---
+      - name: Smoke test the .deb installer in a bare Ubuntu 20.04 container
         if: runner.os == 'Linux'
         run: |
           docker run --rm -v "$PWD/dist:/dist" -e DEBIAN_FRONTEND=noninteractive ubuntu:20.04 bash -euxo pipefail -c '
             apt-get update -qq
-            apt-get install -y -qq --no-install-recommends /dist/*.deb xvfb > /dev/null
+            apt-get install -y -qq --no-install-recommends /dist/*-installer.deb xvfb > /dev/null
             # apt dependencies of the desktop libraries may drag a python3 in; remove every interpreter the app could fall back to,
             # then prove none is left. The app must run on its bundled CPython alone.
             rm -f /usr/bin/python* /usr/local/bin/python* /usr/bin/node /usr/local/bin/node
             if command -v python3 || command -v python || command -v node; then echo "a toolchain is present, the environment is not clean"; exit 1; fi
             cd /tmp
             status=0
-            xvfb-run -a /opt/Stowly/stowly --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-deb-ubuntu2004.json || status=$?
-            cat /dist/smoke-deb-ubuntu2004.json || true
+            xvfb-run -a /opt/Stowly/stowly --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-${{ matrix.target }}-installer-deb-ubuntu2004.json || status=$?
+            cat /dist/smoke-${{ matrix.target }}-installer-deb-ubuntu2004.json || true
             exit $status
           '
-      - name: Smoke test the AppImage in a bare Ubuntu 22.04 container
+      - name: Smoke test the portable tar.gz and the AppImage in a bare Ubuntu 22.04 container
         if: runner.os == 'Linux'
         run: |
-          docker run --rm -v "$PWD/dist:/dist" -e DEBIAN_FRONTEND=noninteractive ubuntu:22.04 bash -euxo pipefail -c '
+          docker run --rm -v "$PWD/dist:/dist" -e DEBIAN_FRONTEND=noninteractive -e TARGET=${{ matrix.target }} ubuntu:22.04 bash -euxo pipefail -c '
             apt-get update -qq
             apt-get install -y -qq --no-install-recommends xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 libatspi2.0-0 libsecret-1-0 libasound2 libgbm1 > /dev/null
             rm -f /usr/bin/python* /usr/local/bin/python* /usr/bin/node /usr/local/bin/node
             if command -v python3 || command -v python || command -v node; then echo "a toolchain is present, the environment is not clean"; exit 1; fi
+            mkdir -p /tmp/portable && tar -xzf /dist/*-portable.tar.gz -C /tmp/portable
+            app=$(find /tmp/portable -maxdepth 2 -type f -name stowly | head -1)
+            echo "portable binary: $app"
             cd /tmp
             status=0
-            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-appimage-ubuntu2204.json || status=$?
-            cat /dist/smoke-appimage-ubuntu2204.json || true
+            xvfb-run -a "$app" --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-$TARGET-portable-targz-ubuntu2204.json || status=$?
+            cat /dist/smoke-$TARGET-portable-targz-ubuntu2204.json || true
+            [ "$status" = 0 ]
+            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-$TARGET-appimage-ubuntu2204.json || status=$?
+            cat /dist/smoke-$TARGET-appimage-ubuntu2204.json || true
             exit $status
           '
-      - name: Smoke test the unpacked build with the toolchains hidden (Windows)
+
+      # --- Windows: the portable zip extracted next to nothing, and the NSIS installer installed silently; toolchains hidden ---
+      - name: Smoke test the portable zip and the installer with the toolchains hidden (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+          $zip = Get-ChildItem dist\*-portable.zip | Select-Object -First 1
+          Expand-Archive -Path $zip.FullName -DestinationPath dist\portable -Force
+          $setup = Get-ChildItem dist\*-installer.exe | Select-Object -First 1
+          $installDir = "$PWD\dist\installed"
+          $i = Start-Process -FilePath $setup.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
+          if ($i.ExitCode -ne 0) { throw "installer exited with $($i.ExitCode)" }
+          Stop-Process -Name Stowly -ErrorAction SilentlyContinue   # in case the installer launched the app
           $env:Path = "C:\Windows\System32;C:\Windows"
           Remove-Item Env:PYTHONHOME, Env:PYTHONPATH -ErrorAction SilentlyContinue
-          $report = "$PWD\dist\smoke-win-unpacked.json"
-          $p = Start-Process -FilePath "$PWD\${{ matrix.unpacked }}\Stowly.exe" -ArgumentList "--smoke=$report" -Wait -PassThru -NoNewWindow
-          Get-Content $report
-          if ($p.ExitCode -ne 0) { throw "smoke test failed with exit code $($p.ExitCode)" }
-      - name: Smoke test the .app with the toolchains hidden (macOS)
+          foreach ($case in @(@{ exe = "$PWD\dist\portable\Stowly.exe"; name = "portable-zip" }, @{ exe = "$installDir\Stowly.exe"; name = "installer-nsis" })) {
+            $report = "$PWD\dist\smoke-${{ matrix.target }}-$($case.name).json"
+            $p = Start-Process -FilePath $case.exe -ArgumentList "--smoke=$report" -Wait -PassThru -NoNewWindow
+            Get-Content $report
+            if ($p.ExitCode -ne 0) { throw "$($case.name) smoke test failed with exit code $($p.ExitCode)" }
+          }
+
+      # --- macOS: the portable zip extracted, and the .app straight from the mounted DMG; toolchains hidden ---
+      - name: Smoke test the portable zip and the DMG with the toolchains hidden (macOS)
         if: runner.os == 'macOS'
         run: |
+          set -euo pipefail
+          mkdir -p dist/portable dist/dmg
+          ditto -x -k dist/*-portable.zip dist/portable
+          hdiutil attach -nobrowse -readonly -mountpoint "$PWD/dist/dmg" dist/*-installer.dmg
           status=0
-          env -i HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin "$PWD/${{ matrix.unpacked }}/Stowly.app/Contents/MacOS/Stowly" --smoke="$PWD/dist/smoke-${{ matrix.target }}.json" || status=$?
-          cat "dist/smoke-${{ matrix.target }}.json" || true
+          for case in "portable-zip:$PWD/dist/portable/Stowly.app" "installer-dmg:$PWD/dist/dmg/Stowly.app"; do
+            name=${case%%:*}; app=${case#*:}
+            report="$PWD/dist/smoke-${{ matrix.target }}-$name.json"
+            env -i HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin "$app/Contents/MacOS/Stowly" --smoke="$report" || status=$?
+            cat "$report" || true
+            [ "$status" = 0 ] || break
+          done
+          hdiutil detach "$PWD/dist/dmg" || true
           exit $status
-      - name: The smoke reports must name the bundled interpreter
+
+      - name: Every smoke report must pass and name the bundled interpreter
         shell: bash
         run: |
+          ls dist/smoke-*.json
           for f in dist/smoke-*.json; do
             echo "== $f"
             grep -q '"ok": true' "$f"
             grep -E '"python":' "$f" | grep -q -E 'resources|Resources'
           done
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload portable packages
+        uses: actions/upload-artifact@v4
         with:
-          name: stowly-${{ matrix.target }}
+          name: stowly-${{ matrix.target }}-portable
+          path: dist/*-portable.*
+          if-no-files-found: error
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: stowly-${{ matrix.target }}-installer
           path: |
+            dist/*-installer.*
             dist/*.AppImage
-            dist/*.deb
-            dist/*.exe
-            dist/*.dmg
-            dist/*.zip
-            dist/smoke-*.json
+          if-no-files-found: error
+      - name: Upload smoke reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: stowly-${{ matrix.target }}-smoke-reports
+          path: dist/smoke-*.json
           if-no-files-found: error
 
   release:
@@ -143,10 +199,8 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
+            artifacts/*-portable.*
+            artifacts/*-installer.*
             artifacts/*.AppImage
-            artifacts/*.deb
-            artifacts/*.exe
-            artifacts/*.dmg
-            artifacts/*.zip
             artifacts/smoke-*.json
           generate_release_notes: true

@@ -25,13 +25,15 @@ Stowly 是一个三维装载规划桌面工具：填好容器（集装箱、货�
 
 在 [Releases](https://github.com/HansBug/stowly/releases) 页面下载对应平台的安装包（每次 [Build Desktop](https://github.com/HansBug/stowly/actions/workflows/build.yaml) 工作流的构建产物也都作为 artifact 附在运行记录里）。
 
-| 平台 | 安装包 | 说明 |
-|---|---|---|
-| Linux x86_64，Ubuntu 20.04 及以上（glibc ≥ 2.31） | `.deb`、`.AppImage` | `.deb` 安装到 `/opt/Stowly` 并设置好沙箱辅助程序权限。在限制非特权 user namespace 的发行版（Ubuntu 24.04 及以后）上，AppImage 需要加 `--no-sandbox`。 |
-| Windows 10 / 11 x64 | NSIS `.exe` 安装程序 | 未签名：首次运行 SmartScreen 会提示"未知发布者"。 |
-| macOS 12 及以上，Apple Silicon 与 Intel | `.dmg` | 未签名：右键 → 打开，或执行一次 `xattr -dr com.apple.quarantine /Applications/Stowly.app`。 |
+每个平台、每种架构都提供两种形态。**portable（绿色版）**解压即用：解到任意位置（U 盘、共享盘都行）直接运行 `Stowly`，除用户目录外不写任何东西。**installer（安装版）**与系统集成（菜单项、卸载程序）。文件名直接写明：`Stowly-<版本>-<os>-<arch>-portable.<ext>` 与 `Stowly-<版本>-<os>-<arch>-installer.<ext>`。
 
-每个安装包内置一份可迁移的 CPython 3.12、后端和 `packingsolver3d`，不需要再安装任何东西。Build Desktop 工作流会把 `.deb` 装进一个没有 Python 和 Node 的干净 `ubuntu:20.04` 容器里跑应用自检，通过后才发布产物。
+| 平台 | 绿色版（解压即用） | 安装版 | 说明 |
+|---|---|---|---|
+| Linux x64 / arm64，glibc ≥ 2.31（Ubuntu 20.04+、Debian 11+、RHEL 9+） | `…-linux-<arch>-portable.tar.gz` → `./stowly` | `…-linux-<arch>-installer.deb`（装到 `/opt/Stowly`），或单文件 `…-linux-<arch>.AppImage` | 在限制非特权 user namespace 的发行版（Ubuntu 24.04 及以后）上，绿色版与 AppImage 需要加 `--no-sandbox`；`.deb` 会设置好沙箱辅助程序权限。 |
+| Windows 10 / 11，x64 / arm64 | `…-win-<arch>-portable.zip` → `Stowly.exe` | `…-win-<arch>-installer.exe`（NSIS，按用户安装，可选目录） | 未签名：首次运行 SmartScreen 会提示"未知发布者"。 |
+| macOS 12+，Apple Silicon（arm64）/ Intel（x64） | `…-mac-<arch>-portable.zip` → `Stowly.app` | `…-mac-<arch>-installer.dmg` | 未签名：右键 → 打开，或执行一次 `xattr -dr com.apple.quarantine Stowly.app`。 |
+
+每个包都内置与自身架构匹配的可迁移 CPython 3.12、后端和 `packingsolver3d`，不需要再安装任何东西。发布前，Build Desktop 工作流会在没有 Python 和 Node 的环境里对每个包跑应用自检：Linux 包在干净的 `ubuntu:20.04` / `ubuntu:22.04` 容器里，Windows 与 macOS 包则把 runner 自带工具链从 `PATH` 里藏掉。
 
 ## 快速上手
 
@@ -89,14 +91,14 @@ make dist           # 同上，再生成安装包：AppImage / deb、NSIS 安装
 make smoke          # dist-dir 之后运行打包版自检（stowly --smoke），输出 JSON 报告
 ```
 
-`stowly --smoke[=report.json]` 内置在应用里：启动内置解释器、调用 HTTP API、跑一个小型求解、确认渲染进程加载并连上后端，写出报告并以 0 / 1 退出。Build Desktop 工作流在四个目标上都跑它（Linux 在干净的 `ubuntu:20.04` 与 `ubuntu:22.04` 容器里，Windows 与 macOS 把 runner 自带工具链从 `PATH` 里藏掉），把安装包和报告作为 artifact 上传，`v*` 标签则直接发布 GitHub release。
+`stowly --smoke[=report.json]` 内置在应用里：启动内置解释器、调用 HTTP API、跑一个小型求解、确认渲染进程加载并连上后端，写出报告并以 0 / 1 退出。Build Desktop 工作流在六个目标上原生构建（Linux、Windows、macOS 各 x64 与 arm64 runner），对每个绿色版和每个安装版都跑自检（Linux 在干净的 `ubuntu:20.04` 与 `ubuntu:22.04` 容器里，Windows 与 macOS 把 runner 自带工具链从 `PATH` 里藏掉），把包和报告作为 artifact 上传，`v*` 标签则直接发布 GitHub release。
 
 ## 兼容性
 
 | 组件 | 支持范围 | 原因 |
 |---|---|---|
-| Linux | x86_64，glibc ≥ 2.31（Ubuntu 20.04+、Debian 11+、RHEL 9+） | Electron 44 要求 glibc 2.31；内置 CPython 只需 2.17。由 `ubuntu:20.04` 容器测试验证。 |
-| Windows | 10 / 11，x64 | Electron 44 已放弃 Windows 7–8.1。 |
+| Linux | x64 与 arm64，glibc ≥ 2.31（Ubuntu 20.04+、Debian 11+、RHEL 9+） | Electron 44 要求 glibc 2.31；内置 CPython 只需 2.17。两种架构都由 `ubuntu:20.04` / `ubuntu:22.04` 容器测试验证。 |
+| Windows | 10 / 11，x64 与 arm64 | Electron 44 已放弃 Windows 7–8.1；arm64 为原生构建（无模拟），在 Windows 11 arm64 runner 上构建并自检。 |
 | macOS | 12 Monterey 及以上，arm64 与 x64 | Electron 44 与 python-build-standalone 3.12 的下限。 |
 | 开发 | Node 20 / 22，Python 3.10 / 3.12 | Code Test 工作流在 Linux、Windows、macOS 三平台跑前后端并上报覆盖率。 |
 

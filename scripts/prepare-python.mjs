@@ -22,6 +22,7 @@ const TRIPLES = {
   'linux-x64': 'x86_64-unknown-linux-gnu',
   'linux-arm64': 'aarch64-unknown-linux-gnu',
   'win-x64': 'x86_64-pc-windows-msvc',
+  'win-arm64': 'aarch64-pc-windows-msvc',
   'mac-arm64': 'aarch64-apple-darwin',
   'mac-x64': 'x86_64-apple-darwin'
 }

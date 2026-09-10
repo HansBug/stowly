@@ -14,19 +14,33 @@ extraResources:
     filter: ["**/*", "!**/__pycache__/**"]
 asar: true
 npmRebuild: false
+# Every platform ships two forms per architecture: a portable archive (extract and run) and an installer, both named
+# ${productName}-${version}-<os>-<arch>-{portable|installer}.<ext>. No `arch` is listed here on purpose: an arch list in the
+# config wins over the CLI, and each Build Desktop runner must build only its own architecture (`--x64` / `--arm64`)
+# because the bundled CPython is architecture-specific. Debian/AppImage spell the arch differently (amd64, x86_64); the
+# workflow renames those to x64/arm64 after packaging.
 win:
-  target: [{ target: nsis, arch: [x64] }]
+  target: [nsis, zip]
+  artifactName: ${productName}-${version}-win-${arch}-portable.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-${version}-win-${arch}-installer.${ext}
 mac:
-  target: [{ target: dmg, arch: [arm64, x64] }]
+  target: [dmg, zip]
   category: public.app-category.productivity
+  artifactName: ${productName}-${version}-mac-${arch}-portable.${ext}
+dmg:
+  artifactName: ${productName}-${version}-mac-${arch}-installer.${ext}
 linux:
-  target: [{ target: AppImage, arch: [x64] }, { target: deb, arch: [x64] }]
+  target: [AppImage, deb, tar.gz]
+  artifactName: ${productName}-${version}-linux-${arch}-portable.${ext}
   category: Office
   maintainer: HansBug <hansbug@buaa.edu.cn>
+appImage:
+  artifactName: ${productName}-${version}-linux-${arch}.${ext}
 deb:
+  artifactName: ${productName}-${version}-linux-${arch}-installer.${ext}
   # Electron's own runtime requirements; electron-builder's default list omits libgbm1 and libasound2, which a minimal
   # Ubuntu 20.04 does not have (found by the Build Desktop container test). libasound2t64 is the 24.04 name.
   depends:
