@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { message } from 'antd'
 import { App } from './App'
 import { setupI18n } from './i18n'
 import { emptyProject, serializeProject } from './lib/project'
@@ -52,14 +51,7 @@ describe('App', () => {
     stowly.saveText.mockReset().mockResolvedValue('/tmp/out')
     stowly.openFiles.mockReset().mockResolvedValue([])
   })
-  afterEach(async () => {
-    // antd's static message root keeps timers (auto-close after 3 s) that would run React work after jsdom is torn down
-    // and surface as "window is not defined"; drop the toasts and let the scheduler flush before the environment goes away.
-    cleanup()
-    message.destroy()
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    vi.unstubAllGlobals()
-  })
+  afterEach(() => vi.unstubAllGlobals())  // toasts and React roots are flushed by vitest.setup.ts
 
   it('connects, solves the demo, exports and saves', async () => {
     // the first poll answers before the backend is ready
