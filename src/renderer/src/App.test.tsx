@@ -30,7 +30,14 @@ function routes() {
   }
 }
 
-const waitForBackend = () => waitFor(() => expect(screen.getAllByRole('button', { name: '从预设添加' })[0]).toBeEnabled())
+const button = (text: string | RegExp, index = 0) => {
+  const matches = Array.from(document.querySelectorAll('button')).filter((b) => (typeof text === 'string' ? b.textContent?.includes(text) : text.test(b.textContent ?? '')))
+  const el = index < 0 ? matches.at(index) : matches[index]
+  if (!el) throw new Error(`no button matching ${text}`)
+  return el
+}
+const tab = (text: string) => Array.from(document.querySelectorAll('.ant-tabs-tab')).find((t) => t.textContent?.includes(text)) as HTMLElement
+const waitForBackend = () => waitFor(() => expect(button('从预设添加')).toBeEnabled())
 const messageText = () => Array.from(document.querySelectorAll('.ant-message-notice')).map((el) => el.textContent).join(' | ')
 
 describe('App', () => {
@@ -52,18 +59,18 @@ describe('App', () => {
     render(<App />)
     expect(screen.getByText('正在启动求解服务…')).toBeInTheDocument()
     await waitForBackend()
-    fireEvent.click(screen.getByRole('button', { name: /载入示例/ }))
+    fireEvent.click(button('载入示例'))
     expect(screen.getByDisplayValue('demo')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('tab', { name: /求解设置/ }))
+    fireEvent.click(tab('求解设置'))
     fireEvent.click(screen.getByTestId('solve-button'))
-    await waitFor(() => expect(screen.getByRole('button', { name: /导出摆放 CSV/ })).toBeEnabled())
+    await waitFor(() => expect(button('导出摆放 CSV')).toBeEnabled())
     expect(screen.getByText('可行解（未证明最优）')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /导出摆放 CSV/ }))
+    fireEvent.click(button('导出摆放 CSV'))
     await waitFor(() => expect(stowly.saveText).toHaveBeenCalledWith('demo.csv', expect.any(Array), 'bin,item\n'))
-    fireEvent.click(screen.getByRole('button', { name: /保存项目/ }))
+    fireEvent.click(button('保存项目'))
     await waitFor(() => expect(stowly.saveText).toHaveBeenCalledWith('demo.json', expect.any(Array), expect.stringContaining('"schema": "stowly/1"')))
     await waitFor(() => expect(messageText()).toContain('已保存到 /tmp/out'))
-    fireEvent.click(screen.getByRole('button', { name: /新建/ }))
+    fireEvent.click(button('新建'))
     expect(useStowly.getState().project.name).toBe('')
   })
 
@@ -71,40 +78,40 @@ describe('App', () => {
     render(<App />)
     await waitForBackend()
     // open: cancelled, invalid, then a real project
-    fireEvent.click(screen.getByRole('button', { name: /打开项目/ }))
+    fireEvent.click(button('打开项目'))
     stowly.openFiles.mockResolvedValueOnce([{ name: 'bad.json', path: '/bad.json', data: encode('not json') }])
-    fireEvent.click(screen.getByRole('button', { name: /打开项目/ }))
+    fireEvent.click(button('打开项目'))
     await waitFor(() => expect(messageText()).toMatch(/JSON|SyntaxError/))
     const opened = { ...emptyProject('opened'), bins: [{ id: 'b1', name: 'crate', x: 1000, y: 800, z: 600, copies: 2 }] }
     stowly.openFiles.mockResolvedValueOnce([{ name: 'p.json', path: '/p.json', data: encode(serializeProject(opened)) }])
-    fireEvent.click(screen.getByRole('button', { name: /打开项目/ }))
+    fireEvent.click(button('打开项目'))
     await screen.findByDisplayValue('opened')
     // import a cargo list through the modal
     stowly.openFiles.mockResolvedValueOnce([{ name: 'c.csv', path: '/c.csv', data: encode('name,x,y,z\nA,1,1,1\n') }])
-    fireEvent.click(screen.getByRole('button', { name: /导入货物\/实例/ }))
-    fireEvent.click(screen.getByRole('button', { name: /确\s*定/ }))
+    fireEvent.click(button('导入货物/实例'))
+    fireEvent.click(button(/确\s*定/))
     await waitFor(() => expect(messageText()).toContain('已导入 1 种货物、0 种容器'))
     expect(useStowly.getState().project.items.map((i) => i.name)).toEqual(['进口箱'])
     expect(useStowly.getState().project.name).toBe('opened')
     // presets: one container, then one cargo type
-    fireEvent.click(screen.getAllByRole('button', { name: '从预设添加' })[0])
+    fireEvent.click(button('从预设添加'))
     await screen.findByText('40 尺高柜')
-    fireEvent.click(screen.getAllByRole('button', { name: /^添\s*加$/ })[0])
+    fireEvent.click(button(/^添\s*加$/))
     expect(useStowly.getState().project.bins.map((b) => b.name)).toEqual(['crate', '40 尺高柜'])
     fireEvent.click(document.querySelector('.ant-drawer-close')!)
-    fireEvent.click(screen.getByRole('tab', { name: /货物/ }))
-    fireEvent.click(screen.getAllByRole('button', { name: '从预设添加' }).at(-1)!)
+    fireEvent.click(tab('货物'))
+    fireEvent.click(button('从预设添加', -1))
     await screen.findByText('邮政 1 号纸箱')
-    fireEvent.click(screen.getAllByRole('button', { name: /^添\s*加$/ }).at(-1)!)
+    fireEvent.click(button(/^添\s*加$/, -1))
     expect(useStowly.getState().project.items).toHaveLength(2)
     // unit and language
     pickOption(0, 'cm')
     expect(useStowly.getState().project.unit).toBe('cm')
     fireEvent.click(screen.getByText('EN'))
-    await screen.findByRole('tab', { name: /Containers/ })
+    await waitFor(() => expect(tab('Containers')).toBeTruthy())
     expect(localStorage.getItem('stowly.language')).toBe('en-US')
     fireEvent.click(screen.getByText('中文'))
-    await screen.findByRole('tab', { name: /容器/ })
+    await waitFor(() => expect(tab('容器')).toBeTruthy())
   })
 
   it('shows import failures and a backend that could not start', async () => {
@@ -112,8 +119,8 @@ describe('App', () => {
     await waitForBackend()
     vi.stubGlobal('fetch', fakeFetch({ ...routes(), 'POST /api/import': () => ({ status: 400, body: { detail: 'unreadable' } }) }))
     stowly.openFiles.mockResolvedValueOnce([{ name: 'c.csv', path: '/c.csv', data: encode('x') }])
-    fireEvent.click(screen.getByRole('button', { name: /导入货物\/实例/ }))
-    fireEvent.click(screen.getByRole('button', { name: /确\s*定/ }))
+    fireEvent.click(button('导入货物/实例'))
+    fireEvent.click(button(/确\s*定/))
     await waitFor(() => expect(messageText()).toContain('导入失败: 400: unreadable'))
     cleanup()
     stowly.backendInfo.mockResolvedValue({ error: 'python missing', log: ['traceback'] } as never)

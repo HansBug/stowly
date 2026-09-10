@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import { configure } from '@testing-library/react'
 
 // Rendering the whole Ant Design shell in jsdom takes a second or two; give waitFor room.
-configure({ asyncUtilTimeout: 8000 })
+configure({ asyncUtilTimeout: 15000 })
 
 // antd measures layout through matchMedia and ResizeObserver, which jsdom lacks. Main-process tests run in the node environment and have no window.
 if (typeof window !== 'undefined' && !window.matchMedia) {

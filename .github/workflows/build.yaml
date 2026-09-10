@@ -67,7 +67,7 @@ jobs:
             apt-get install -y -qq /dist/*.deb xvfb > /dev/null
             if command -v python3 || command -v python || command -v node; then echo "a toolchain is present, the environment is not clean"; exit 1; fi
             cd /tmp
-            xvfb-run -a /opt/Stowly/stowly --no-sandbox --smoke=/dist/smoke-deb-ubuntu2004.json
+            xvfb-run -a /opt/Stowly/stowly --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-deb-ubuntu2004.json
             cat /dist/smoke-deb-ubuntu2004.json
           '
       - name: Smoke test the AppImage in a bare Ubuntu 22.04 container
@@ -78,7 +78,7 @@ jobs:
             apt-get install -y -qq xvfb libfuse2 libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 libatspi2.0-0 libsecret-1-0 libasound2 libgbm1 > /dev/null
             if command -v python3 || command -v python || command -v node; then echo "a toolchain is present, the environment is not clean"; exit 1; fi
             cd /tmp
-            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --smoke=/dist/smoke-appimage-ubuntu2204.json
+            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-appimage-ubuntu2204.json
             cat /dist/smoke-appimage-ubuntu2204.json
           '
       - name: Smoke test the unpacked build with the toolchains hidden (Windows)
