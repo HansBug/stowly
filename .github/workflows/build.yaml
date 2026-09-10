@@ -27,11 +27,9 @@ jobs:
             target: linux-x64
             builder: --linux --x64
             unpacked: dist/linux-unpacked
-          # No AppImage on arm64: electron-builder's arm64 AppImage runtime links an unversioned libz.so that distributions do
-          # not ship ("error while loading shared libraries: libz.so"); the portable tar.gz and the .deb cover arm64.
           - os: ubuntu-22.04-arm
             target: linux-arm64
-            builder: --linux deb tar.gz --arm64
+            builder: --linux --arm64
             unpacked: dist/linux-arm64-unpacked
           - os: windows-2022
             target: win-x64
@@ -113,26 +111,6 @@ jobs:
               cat /dist/smoke-$TARGET-appimage-ubuntu2204.json || true
             fi
             exit $status
-          '
-
-      # --- Diagnostic (Linux arm64 only, never fails the job): the legacy AppImage runtime for arm64 links an unversioned libz.so.
-      #     Try electron-builder's static AppImage runtime toolset and run the result in a bare Ubuntu 22.04 container.
-      - name: Experiment with the static AppImage runtime for arm64
-        if: matrix.target == 'linux-arm64'
-        continue-on-error: true
-        run: |
-          set -x
-          npx electron-builder --linux AppImage --arm64 --publish never -c.toolsets.appimage=1.0.3 -c.directories.output=dist-exp-appimage 2>&1 | tail -5
-          ls -la dist-exp-appimage | grep -i appimage || { echo "no AppImage produced"; exit 0; }
-          docker run --rm -v "$PWD/dist-exp-appimage:/exp" -e DEBIAN_FRONTEND=noninteractive ubuntu:22.04 bash -euxo pipefail -c '
-            apt-get update -qq
-            apt-get install -y -qq --no-install-recommends xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 libatspi2.0-0 libsecret-1-0 libasound2 libgbm1 > /dev/null
-            rm -f /usr/bin/python* /usr/bin/node
-            cd /tmp
-            status=0
-            xvfb-run -a /exp/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/exp/smoke-appimage-static.json || status=$?
-            echo "appimage (static runtime) smoke exit $status"
-            head -c 600 /exp/smoke-appimage-static.json || true
           '
 
       # --- Diagnostic (Windows arm64 only, never fails the job): the legacy NSIS 3.0.4.1 installer detects ARM64 correctly but its
