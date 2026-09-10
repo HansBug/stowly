@@ -32,7 +32,12 @@ export interface PresetEntry {
 }
 
 export class BackendClient {
-  constructor(private readonly info: BackendInfo, private readonly fetchImpl: typeof fetch = fetch) {}
+  // Stored as a closure on purpose: calling a bare `fetch` reference as a method makes `this` the client
+  // and the browser throws "Illegal invocation".
+  constructor(
+    private readonly info: BackendInfo,
+    private readonly fetchImpl: typeof fetch = (input, init) => fetch(input, init),
+  ) {}
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
     return { 'X-Stowly-Token': this.info.token, ...extra }

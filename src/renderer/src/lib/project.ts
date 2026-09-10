@@ -123,11 +123,11 @@ export function demoProject(): Project {
   const project = emptyProject('demo')
   project.bins = [{ id: 'bin-40hq', name: "40' HQ", x: 12032, y: 2352, z: 2698, copies: 1, cost: 1, maxWeight: 26460 }]
   const cartons: [string, number, number, number, number, number][] = [
-    ['邮政 1 号 530×290×370', 530, 290, 370, 300, 8],
-    ['邮政 2 号 530×230×290', 530, 230, 290, 300, 6],
-    ['邮政 3 号 430×210×270', 430, 210, 270, 400, 4],
-    ['欧标托盘整托 1200×800×1200', 1200, 800, 1200, 24, 450],
-    ['IBC 吨桶 1200×1000×1150', 1200, 1000, 1150, 12, 1100]
+    ['邮政 1 号纸箱', 530, 290, 370, 300, 8],
+    ['邮政 2 号纸箱', 530, 230, 290, 300, 6],
+    ['邮政 3 号纸箱', 430, 210, 270, 400, 4],
+    ['欧标托盘整托', 1200, 800, 1200, 24, 450],
+    ['IBC 吨桶', 1200, 1000, 1150, 12, 1100]
   ]
   project.items = cartons.map(([name, x, y, z, copies, weight], index) => ({ id: `item-${index + 1}`, name, x, y, z, copies, weight, rotations: index < 3 ? 'all' : 'upright' }))
   project.settings = { solver: 'box', objective: 'knapsack', timeLimit: 10, optimizationMode: 'anytime' }

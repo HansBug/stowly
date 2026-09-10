@@ -19,13 +19,15 @@ export function ResultPanel({ project, result, error, selectedBin, onExport }: P
   if (error) return <Alert type="error" showIcon message={t('result.failed')} description={<pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{error}</pre>} />
   if (!result) return <Empty description={t('result.none')} />
   const bin = result.bins[selectedBin]
+  const volumeValued = project.settings.objective === 'knapsack' && project.items.every((item) => item.profit == null)
+  const fmt = (v: number | null) => (v == null ? '-' : volumeValued ? `${(v / 1e9).toFixed(2)} m³` : Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2))
   const counts = result.counts.map((count) => ({ ...count, name: itemName(project, count.itemId), index: project.items.findIndex((item) => item.id === count.itemId) }))
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Descriptions size="small" column={2} bordered
         items={[
           { key: 'status', label: t('result.title'), children: <Tag color={STATUS_COLOR[result.status] ?? 'default'}>{t(`result.status.${result.status}`, { defaultValue: result.status })}</Tag> },
-          { key: 'value', label: `${t('result.value')} / ${t('result.bound')}`, children: `${result.value ?? '-'} / ${result.bound ?? '-'}` },
+          { key: 'value', label: `${t('result.value')} / ${t('result.bound')}`, children: `${fmt(result.value)} / ${fmt(result.bound)}` },
           { key: 'bins', label: t('result.binsUsed'), children: binsUsed(result) },
           { key: 'packed', label: t('result.packed'), children: `${itemsPacked(result)} / ${itemsTotal(result)}` },
           { key: 'util', label: t('result.utilization'), children: <Progress percent={Number((overallUtilization(result) * 100).toFixed(1))} size="small" /> },

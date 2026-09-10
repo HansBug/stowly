@@ -98,10 +98,10 @@ export function App() {
   return (
     <ConfigProvider locale={s.language === 'zh-CN' ? zhCN : enUS} theme={{ token: { borderRadius: 6 } }}>
       <Layout style={{ height: '100vh' }}>
-        <Layout.Header style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Typography.Title level={4} style={{ margin: 0 }}>{t('app.title')}</Typography.Title>
-          <Typography.Text type="secondary">{t('app.subtitle')}</Typography.Text>
-          <Input placeholder="project" value={s.project.name} onChange={(e) => s.setName(e.target.value)} style={{ width: 200 }} size="small" />
+        <Layout.Header style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '8px 16px', height: 'auto', minHeight: 56, lineHeight: 'normal', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <Typography.Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>{t('app.title')}</Typography.Title>
+          <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap' }}>{t('app.subtitle')}</Typography.Text>
+          <Input placeholder={t('app.projectName')} value={s.project.name} onChange={(e) => s.setName(e.target.value)} style={{ width: 200 }} size="small" />
           {s.dirty ? <Badge status="warning" text={t('common.unsaved')} /> : null}
           <div style={{ flex: 1 }} />
           <Space size="small" wrap>
@@ -111,12 +111,12 @@ export function App() {
             <Button size="small" icon={<ImportOutlined />} onClick={() => setImporting(true)} disabled={!client}>{t('menu.import')}</Button>
             <Button size="small" icon={<ExportOutlined />} onClick={exportCsv} disabled={!s.result}>{t('menu.exportCsv')}</Button>
             <Button size="small" icon={<ExperimentOutlined />} onClick={s.loadDemo}>{t('menu.demo')}</Button>
-            <Select size="small" value={s.project.unit} onChange={s.setUnit} options={(['mm', 'cm', 'm', 'in'] as Unit[]).map((u) => ({ value: u, label: `${t('menu.unit')}: ${u}` }))} />
+            <Select size="small" prefix={t('menu.unit')} value={s.project.unit} onChange={s.setUnit} options={(['mm', 'cm', 'm', 'in'] as Unit[]).map((u) => ({ value: u, label: u }))} style={{ width: 110 }} />
             <Segmented size="small" value={s.language} onChange={(value) => s.setLanguage(value as Language)} options={[{ value: 'zh-CN', label: '中文' }, { value: 'en-US', label: 'EN' }]} data-testid="language-switch" />
           </Space>
         </Layout.Header>
         <Layout>
-          <Layout.Sider width={640} theme="light" style={{ borderRight: '1px solid #eee', overflow: 'auto', padding: 12 }}>
+          <Layout.Sider width={760} theme="light" style={{ borderRight: '1px solid #eee', overflow: 'auto', padding: 12 }}>
             {backendError ? <Alert type="error" showIcon message={t('app.backendFailed')} description={<pre style={{ whiteSpace: 'pre-wrap', fontSize: 11 }}>{backendError}</pre>} style={{ marginBottom: 12 }} /> : null}
             {!backend && !backendError ? <Space style={{ marginBottom: 12 }}><Spin size="small" />{t('app.backendStarting')}</Space> : null}
             <Tabs

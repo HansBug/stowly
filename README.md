@@ -49,6 +49,8 @@ make dist           # same, plus the installers: AppImage/deb, NSIS installer, D
 
 Targets: Linux x64 (glibc 2.31 and newer, i.e. Ubuntu 20.04+), Windows x64 (10/11), macOS arm64 and x64 (12+). The `Build Desktop` workflow produces all of them on native runners.
 
+On Ubuntu 24.04 and other distributions that restrict unprivileged user namespaces, the unpacked build and the AppImage abort with a `chrome-sandbox` message; install the `.deb` (it sets the helper's permissions) or start the binary with `--no-sandbox`. `make run` handles the same hurdle for development automatically.
+
 ## License
 
 MIT. PackingSolver is MIT licensed by Florian Fontan; see the packingsolver3d NOTICE for the exact build configuration.

@@ -11,6 +11,7 @@ Desktop load-planning workbench: Electron shell + React/Ant Design/Three.js rend
 - `src/renderer/src/` `lib/` (project model, result helpers, backend client, palette), `store/` (zustand), `three/` (scene controller; `placementBoxes` is the pure, tested part), `components/`, `i18n/`, `App.tsx`.
 - `backend/stowly_backend/` `models.py` (mirrors `lib/project.ts`; millimetres and kilograms everywhere), `solver.py` (project -> packingsolver3d instance, job manager), `importers.py`, `exporters.py`, `presets/` (JSON data + `SOURCES.md`), `app.py` (FastAPI, `X-Stowly-Token`), `__main__.py`.
 - `Makefile` is the developer entry point (`make run`, `make test`, `make build`, `make dist-dir`, `make dist`); it creates `.venv` and runs `npm ci` on demand, so keep new commands there rather than in prose.
+- `scripts/ui-probe.mjs` (`make probe`) drives the built app through Playwright's Electron support: loads the demo, solves, exports, imports a CSV through stubbed dialogs, switches language, and leaves screenshots plus console errors under `/tmp/stowly_ui`. Run it after any renderer change and look at the screenshots; unit tests do not see layout.
 - `scripts/prepare-python.mjs` downloads python-build-standalone and installs the backend for packaging; `electron-builder.yml` ships it as `resources/python`.
 
 ## Rules

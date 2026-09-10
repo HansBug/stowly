@@ -20,7 +20,11 @@ export function Viewer3D({ project, result, selectedBin, onSelectBin }: Props) {
   const [hovered, setHovered] = useState<BoxDescriptor | null>(null)
   const [selected, setSelected] = useState<BoxDescriptor | null>(null)
   const [visible, setVisible] = useState<number | null>(null)
-  const bin: PackedBin | null = result?.bins[selectedBin] ?? null
+  // Without a result the first container is drawn empty, so the user sees what they are editing.
+  const preview = project.bins[0]
+  const bin: PackedBin | null = result
+    ? result.bins[selectedBin] ?? null
+    : preview ? { binId: preview.id, binIndex: 0, copies: preview.copies, x: preview.x, y: preview.y, z: preview.z, placements: [], volumeUtilization: 0, weight: 0 } : null
   const colors = useMemo(() => Object.fromEntries(project.items.map((item) => [item.id, item.color])), [project.items])
 
   useEffect(() => {
@@ -57,13 +61,13 @@ export function Viewer3D({ project, result, selectedBin, onSelectBin }: Props) {
             options={result.bins.map((b, index) => ({ value: index, label: `${t('result.bin')} ${index + 1}${b.copies > 1 ? ` ×${b.copies}` : ''}` }))} />
         ) : null}
         {bin ? <Tag color="blue">{bin.x} × {bin.y} × {bin.z} mm</Tag> : null}
-        {bin ? <Tag>{t('result.binUtil')} {(bin.volumeUtilization * 100).toFixed(1)}%</Tag> : null}
+        {bin && result ? <Tag>{t('result.binUtil')} {(bin.volumeUtilization * 100).toFixed(1)}%</Tag> : null}
         <Button size="small" onClick={() => controller.current?.setBin(bin, colors)}>{t('viewer.reset')}</Button>
       </Space>
       <div ref={container} data-testid="viewer-canvas" style={{ flex: 1, minHeight: 240, position: 'relative' }}>
         {!bin ? <Empty description={t('viewer.noBin')} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} /> : null}
       </div>
-      {bin ? (
+      {bin && result ? (
         <div style={{ padding: '4px 12px 8px' }}>
           <Space align="center" style={{ width: '100%' }}>
             <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap' }}>{t('result.step')}</Typography.Text>

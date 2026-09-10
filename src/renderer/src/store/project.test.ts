@@ -33,9 +33,14 @@ describe('stowly store', () => {
     const imported = { ...emptyProject('cargo'), items: [{ id: 'x', name: 'x', x: 1, y: 1, z: 1, copies: 1, rotations: 'all' as const }] }
     useStowly.getState().mergeImport(imported)
     const state = useStowly.getState()
-    expect(state.project.items).toHaveLength(1)
+    // A cargo list is appended and leaves the project name alone.
+    expect(state.project.items).toHaveLength(6)
     expect(state.project.bins).toHaveLength(1)
-    expect(state.project.name).toBe('cargo')
+    expect(state.project.name).toBe('demo')
+    // A complete instance replaces containers, cargo and settings.
+    const instance = { ...imported, name: 'thpack', bins: [{ id: 'b', name: 'b', x: 10, y: 10, z: 10, copies: 1, cost: 1, maxWeight: null }], settings: { ...imported.settings, timeLimit: 7 } }
+    useStowly.getState().mergeImport(instance)
+    expect(useStowly.getState().project).toMatchObject({ name: 'thpack', bins: instance.bins, items: instance.items, settings: { timeLimit: 7 } })
   })
 
   it('covers the small setters', () => {

@@ -78,18 +78,15 @@ export const useStowly = create<StowlyState>((set, get) => ({
     set((s) => ({ project: { ...s.project, items: [...s.project.items, { id: newId('item'), name: '', x: 400, y: 300, z: 300, copies: 10, rotations: 'all', ...item }] }, dirty: true })),
   updateItem: (id, patch) => set((s) => ({ project: { ...s.project, items: s.project.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) }, dirty: true })),
   removeItem: (id) => set((s) => ({ project: { ...s.project, items: s.project.items.filter((i) => i.id !== id) }, dirty: true })),
+  // A complete instance (containers and cargo) replaces the project; a plain cargo or container list is appended to it.
   mergeImport: (imported) =>
-    set((s) => ({
-      project: {
-        ...s.project,
-        name: imported.name || s.project.name,
-        bins: imported.bins.length ? imported.bins : s.project.bins,
-        items: imported.items.length ? imported.items : s.project.items,
-        settings: imported.bins.length && imported.items.length ? imported.settings : s.project.settings
-      },
-      result: null,
-      dirty: true
-    })),
+    set((s) => {
+      const complete = imported.bins.length > 0 && imported.items.length > 0
+      const project = complete
+        ? { ...s.project, name: imported.name || s.project.name, bins: imported.bins, items: imported.items, settings: imported.settings }
+        : { ...s.project, bins: [...s.project.bins, ...imported.bins], items: [...s.project.items, ...imported.items] }
+      return { project, result: null, dirty: true }
+    }),
   setPresets: (presets) => set({ presets }),
   setResult: (result) => set({ result, selectedBin: 0 }),
   setSelectedBin: (selectedBin) => set({ selectedBin }),
