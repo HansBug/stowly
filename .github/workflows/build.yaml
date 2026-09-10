@@ -64,22 +64,30 @@ jobs:
         run: |
           docker run --rm -v "$PWD/dist:/dist" -e DEBIAN_FRONTEND=noninteractive ubuntu:20.04 bash -euxo pipefail -c '
             apt-get update -qq
-            apt-get install -y -qq /dist/*.deb xvfb > /dev/null
+            apt-get install -y -qq --no-install-recommends /dist/*.deb xvfb > /dev/null
+            # apt dependencies of the desktop libraries may drag a python3 in; remove every interpreter the app could fall back to,
+            # then prove none is left. The app must run on its bundled CPython alone.
+            rm -f /usr/bin/python* /usr/local/bin/python* /usr/bin/node /usr/local/bin/node
             if command -v python3 || command -v python || command -v node; then echo "a toolchain is present, the environment is not clean"; exit 1; fi
             cd /tmp
-            xvfb-run -a /opt/Stowly/stowly --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-deb-ubuntu2004.json
-            cat /dist/smoke-deb-ubuntu2004.json
+            status=0
+            xvfb-run -a /opt/Stowly/stowly --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-deb-ubuntu2004.json || status=$?
+            cat /dist/smoke-deb-ubuntu2004.json || true
+            exit $status
           '
       - name: Smoke test the AppImage in a bare Ubuntu 22.04 container
         if: runner.os == 'Linux'
         run: |
           docker run --rm -v "$PWD/dist:/dist" -e DEBIAN_FRONTEND=noninteractive ubuntu:22.04 bash -euxo pipefail -c '
             apt-get update -qq
-            apt-get install -y -qq xvfb libfuse2 libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 libatspi2.0-0 libsecret-1-0 libasound2 libgbm1 > /dev/null
+            apt-get install -y -qq --no-install-recommends xvfb libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 libatspi2.0-0 libsecret-1-0 libasound2 libgbm1 > /dev/null
+            rm -f /usr/bin/python* /usr/local/bin/python* /usr/bin/node /usr/local/bin/node
             if command -v python3 || command -v python || command -v node; then echo "a toolchain is present, the environment is not clean"; exit 1; fi
             cd /tmp
-            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-appimage-ubuntu2204.json
-            cat /dist/smoke-appimage-ubuntu2204.json
+            status=0
+            xvfb-run -a /dist/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-appimage-ubuntu2204.json || status=$?
+            cat /dist/smoke-appimage-ubuntu2204.json || true
+            exit $status
           '
       - name: Smoke test the unpacked build with the toolchains hidden (Windows)
         if: runner.os == 'Windows'
@@ -94,8 +102,10 @@ jobs:
       - name: Smoke test the .app with the toolchains hidden (macOS)
         if: runner.os == 'macOS'
         run: |
-          env -i HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin "$PWD/${{ matrix.unpacked }}/Stowly.app/Contents/MacOS/Stowly" --smoke="$PWD/dist/smoke-${{ matrix.target }}.json"
-          cat "dist/smoke-${{ matrix.target }}.json"
+          status=0
+          env -i HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin "$PWD/${{ matrix.unpacked }}/Stowly.app/Contents/MacOS/Stowly" --smoke="$PWD/dist/smoke-${{ matrix.target }}.json" || status=$?
+          cat "dist/smoke-${{ matrix.target }}.json" || true
+          exit $status
       - name: The smoke reports must name the bundled interpreter
         shell: bash
         run: |
