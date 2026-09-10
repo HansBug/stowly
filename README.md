@@ -30,7 +30,7 @@ Every platform comes in two forms per architecture. The **portable** archive is 
 | Platform | Portable (extract and run) | Installer | Notes |
 |---|---|---|---|
 | Linux x64 / arm64, glibc ≥ 2.31 (Ubuntu 20.04+, Debian 11+, RHEL 9+) | `…-linux-<arch>-portable.tar.gz` → `./stowly` | `…-linux-<arch>-installer.deb` (installs to `/opt/Stowly`), or the single-file `…-linux-<arch>.AppImage` | On distributions that restrict unprivileged user namespaces (Ubuntu 24.04+) the portable build and the AppImage need `--no-sandbox`; the `.deb` sets the sandbox helper's permissions. |
-| Windows 10 / 11, x64 / arm64 | `…-win-<arch>-portable.zip` → `Stowly.exe` | `…-win-<arch>-installer.exe` (NSIS, per-user, choose the folder) | Unsigned: SmartScreen shows "unknown publisher" the first time. |
+| Windows 10 / 11, x64 / arm64 | `…-win-<arch>-portable.zip` → `Stowly.exe` | `…-win-<arch>-installer.exe` (per-user, choose the folder; NSIS on x64, Inno Setup on arm64) | Unsigned: SmartScreen shows "unknown publisher" the first time. |
 | macOS 12+, Apple Silicon (arm64) / Intel (x64) | `…-mac-<arch>-portable.zip` → `Stowly.app` | `…-mac-<arch>-installer.dmg` | Unsigned: open with right-click → *Open*, or run `xattr -dr com.apple.quarantine Stowly.app` once. |
 
 Each package bundles a relocatable CPython 3.12 with the backend and `packingsolver3d` for its own architecture; nothing else needs to be installed. Before a package is published, the Build Desktop workflow runs the app's self-test on it in an environment without Python or Node: the Linux packages inside bare `ubuntu:20.04` / `ubuntu:22.04` containers, the Windows and macOS packages with the runners' toolchains hidden from `PATH`.

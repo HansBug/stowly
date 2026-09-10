@@ -30,7 +30,7 @@ Stowly 是一个三维装载规划桌面工具：填好容器（集装箱、货�
 | 平台 | 绿色版（解压即用） | 安装版 | 说明 |
 |---|---|---|---|
 | Linux x64 / arm64，glibc ≥ 2.31（Ubuntu 20.04+、Debian 11+、RHEL 9+） | `…-linux-<arch>-portable.tar.gz` → `./stowly` | `…-linux-<arch>-installer.deb`（装到 `/opt/Stowly`），或单文件 `…-linux-<arch>.AppImage` | 在限制非特权 user namespace 的发行版（Ubuntu 24.04 及以后）上，绿色版与 AppImage 需要加 `--no-sandbox`；`.deb` 会设置好沙箱辅助程序权限。 |
-| Windows 10 / 11，x64 / arm64 | `…-win-<arch>-portable.zip` → `Stowly.exe` | `…-win-<arch>-installer.exe`（NSIS，按用户安装，可选目录） | 未签名：首次运行 SmartScreen 会提示"未知发布者"。 |
+| Windows 10 / 11，x64 / arm64 | `…-win-<arch>-portable.zip` → `Stowly.exe` | `…-win-<arch>-installer.exe`（按用户安装，可选目录；x64 为 NSIS，arm64 为 Inno Setup） | 未签名：首次运行 SmartScreen 会提示"未知发布者"。 |
 | macOS 12+，Apple Silicon（arm64）/ Intel（x64） | `…-mac-<arch>-portable.zip` → `Stowly.app` | `…-mac-<arch>-installer.dmg` | 未签名：右键 → 打开，或执行一次 `xattr -dr com.apple.quarantine Stowly.app`。 |
 
 每个包都内置与自身架构匹配的可迁移 CPython 3.12、后端和 `packingsolver3d`，不需要再安装任何东西。发布前，Build Desktop 工作流会在没有 Python 和 Node 的环境里对每个包跑应用自检：Linux 包在干净的 `ubuntu:20.04` / `ubuntu:22.04` 容器里，Windows 与 macOS 包则把 runner 自带工具链从 `PATH` 里藏掉。

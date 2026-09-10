@@ -113,52 +113,23 @@ jobs:
             exit $status
           '
 
-      # --- Diagnostic (Windows arm64 only, never fails the job): the legacy NSIS 3.0.4.1 installer detects ARM64 correctly but its
-      #     x86 Nsis7z plugin leaves no files behind under emulation. Try the modern NSIS 3.12 bundle and the zip payload.
-      - name: Experiment with alternative NSIS toolsets for the arm64 installer
+      # --- Windows arm64: electron-builder's NSIS installers do not work on Windows on ARM (see build/stowly-win-arm64.iss);
+      #     the installer is built with Inno Setup from the unpacked directory instead ---
+      - name: Build the arm64 installer with Inno Setup
         if: matrix.target == 'win-arm64'
-        continue-on-error: true
-        timeout-minutes: 40
         shell: pwsh
         run: |
-          $ErrorActionPreference = "Continue"
-          function Run-WithTimeout($file, $arguments, $seconds, $label) {
-            $p = Start-Process -FilePath $file -ArgumentList $arguments -PassThru -NoNewWindow
-            if (-not $p.WaitForExit($seconds * 1000)) {
-              Write-Host "${label}: still running after $seconds s; processes:"
-              Get-Process | Where-Object { $_.Name -match "towly|nsis|makensis|node|electron|Setup|installer" } | Select-Object Name, Id, StartTime | Format-Table | Out-String | Write-Host
-              Get-Process | Where-Object { $_.Name -match "towly|nsis|makensis|Setup|installer" } | Stop-Process -Force -ErrorAction SilentlyContinue
-              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-              return 124
-            }
-            return $p.ExitCode
+          $ErrorActionPreference = "Stop"
+          Remove-Item dist\*-installer.exe -ErrorAction SilentlyContinue
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "$env:TEMP\is.exe" -MaximumRedirection 5
+            Start-Process "$env:TEMP\is.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait
           }
-          $variants = @(
-            @{ name = "zip";          args = "-c.nsis.useZip=true" },
-            @{ name = "nsis312";      args = "-c.toolsets.nsis=1.2.1" },
-            @{ name = "nsis312-zip";  args = "-c.toolsets.nsis=1.2.1 -c.nsis.useZip=true" }
-          )
-          foreach ($v in $variants) {
-            $out = "$PWD\dist-exp-$($v.name)"
-            Write-Host "===== variant $($v.name): $($v.args)"
-            $code = Run-WithTimeout "cmd.exe" "/c npx electron-builder --win nsis --arm64 --publish never -c.directories.output=$out $($v.args) > $out.build.log 2>&1" 900 "build $($v.name)"
-            Write-Host "build exit $code"; Get-Content "$out.build.log" -ErrorAction SilentlyContinue | Select-Object -Last 8 | Write-Host
-            $setup = Get-ChildItem "$out\*-installer.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-            if (-not $setup) { Write-Host "no installer produced"; continue }
-            $installDir = "$out\installed"
-            $code = Run-WithTimeout $setup.FullName @("/S", "/D=$installDir") 300 "install $($v.name)"
-            Start-Sleep -Seconds 15
-            Write-Host "installer exit $code; files in ${installDir}:"
-            Get-ChildItem $installDir -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host
-            Get-Content "$installDir\install-debug.txt" -ErrorAction SilentlyContinue | Write-Host
-            if (Test-Path "$installDir\Stowly.exe") {
-              $saved = $env:Path; $env:Path = "C:\Windows\System32;C:\Windows"
-              $code = Run-WithTimeout "$installDir\Stowly.exe" "--smoke=$out\smoke.json" 300 "smoke $($v.name)"
-              $env:Path = $saved
-              Write-Host "smoke exit $code"; Get-Content "$out\smoke.json" -ErrorAction SilentlyContinue | Select-Object -First 12 | Write-Host
-            }
-            Stop-Process -Name Stowly -ErrorAction SilentlyContinue
-          }
+          & $iscc | Select-Object -First 1
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$PWD\${{ matrix.unpacked }}" "/DOutputDir=$PWD\dist" "/DOutputBaseFilename=Stowly-$version-win-arm64-installer" build\stowly-win-arm64.iss | Select-Object -Last 3
+          Get-ChildItem dist\*-installer.exe
 
       # --- Windows: the portable zip extracted next to nothing, and the NSIS installer installed silently; toolchains hidden ---
       - name: Smoke test the portable zip and the installer with the toolchains hidden (Windows)
@@ -185,28 +156,21 @@ jobs:
           $installDir = "$PWD\dist\installed"
           $candidates = @("$installDir\Stowly.exe", "$env:LOCALAPPDATA\Programs\Stowly\Stowly.exe", "$env:LOCALAPPDATA\Programs\stowly\Stowly.exe", "$env:ProgramFiles\Stowly\Stowly.exe")
           function Find-Installed { $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1 }
-          $i = Start-Process -FilePath $setup.FullName -ArgumentList "/S", "/D=$installDir" -Wait -PassThru
+          # NSIS (x64): /S /D=dir ; Inno Setup (arm64): /VERYSILENT /DIR=dir
+          $silent = if ("${{ matrix.target }}" -eq "win-arm64") { @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$installDir") } else { @("/S", "/D=$installDir") }
+          $i = Start-Process -FilePath $setup.FullName -ArgumentList $silent -Wait -PassThru
           Write-Host "installer exit code $($i.ExitCode)"
           for ($t = 0; $t -lt 90 -and -not (Find-Installed); $t++) { Start-Sleep -Seconds 1 }
-          if (-not (Find-Installed)) {
-            # Second attempt through cmd, which behaves differently for emulated x86 stubs on Windows on ARM.
-            Write-Host "nothing installed after Start-Process; retrying through cmd /c start /wait"
-            cmd /c "start /wait `"`" `"$($setup.FullName)`" /S /D=$installDir"
-            Write-Host "cmd exit code $LASTEXITCODE"
-            for ($t = 0; $t -lt 90 -and -not (Find-Installed); $t++) { Start-Sleep -Seconds 1 }
-          }
           if (-not (Find-Installed)) {
             Write-Host "--- diagnostics"
             Get-Process | Where-Object { $_.Name -like "*towly*" -or $_.Name -like "*nsis*" } | Select-Object Name, Id, Path | Format-Table | Out-String | Write-Host
             foreach ($dir in @($installDir, "$env:LOCALAPPDATA\Programs", "$env:ProgramFiles", "${env:ProgramFiles(x86)}")) { Write-Host "== $dir"; Get-ChildItem $dir -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Out-String | Write-Host }
             foreach ($hive in @("HKCU:", "HKLM:")) { Get-ItemProperty "$hive\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*towly*" } | Select-Object DisplayName, InstallLocation, UninstallString | Format-List | Out-String | Write-Host }
             Write-Host "installer: $($setup.FullName) $((Get-Item $setup.FullName).Length) bytes"
-            Write-Host "== install-debug.txt"; Get-Content "$installDir\install-debug.txt" -ErrorAction SilentlyContinue | Write-Host
             throw "installed Stowly.exe not found after the silent install"
           }
           $installedExe = Find-Installed
           Write-Host "installed at $installedExe"
-          Get-Content (Join-Path (Split-Path $installedExe) "install-debug.txt") -ErrorAction SilentlyContinue | Write-Host
           Stop-Process -Name Stowly -ErrorAction SilentlyContinue   # in case the installer launched the app
           Invoke-Smoke $installedExe "installer-nsis"
 

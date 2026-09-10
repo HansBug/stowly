@@ -29,7 +29,6 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  include: build/installer.nsh
   artifactName: ${productName}-${version}-win-${arch}-installer.${ext}
 mac:
   target: [dmg, zip]
