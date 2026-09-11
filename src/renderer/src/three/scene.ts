@@ -130,10 +130,17 @@ export class SceneController {
     const grid = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(points, 3)), new THREE.LineBasicMaterial({ color: 0x7d8a99, transparent: true, opacity: 0.6 }))
     grid.userData.grid = true
     this.binGroup.add(grid)
-    const longest = Math.max(size.x, size.y, size.z)
-    const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(-0.08 * longest, size.y, -0.08 * longest), size.y, 0x333333, 0.12 * size.y, 0.08 * size.y)
+    // The arrow stands just outside the corner nearest the default camera (x-max / y-max), full container height, in the
+    // same blue as the dimension tag, so it stays readable when the bin is packed solid.
+    const offset = 0.06 * Math.max(size.x, size.z)
+    const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(size.x + offset, size.y, size.z + offset), size.y, 0x1d39c4, 0.18 * size.y, 0.12 * size.y)
     arrow.userData.gravity = true
     this.binGroup.add(arrow)
+    const foot = new THREE.Mesh(new THREE.RingGeometry(0.05 * size.y, 0.13 * size.y, 24), new THREE.MeshBasicMaterial({ color: 0x1d39c4, transparent: true, opacity: 0.5, side: THREE.DoubleSide }))
+    foot.rotation.x = -Math.PI / 2
+    foot.position.set(size.x + offset, 0.002, size.z + offset)
+    foot.userData.gravity = true
+    this.binGroup.add(foot)
   }
 
   /**
