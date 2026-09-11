@@ -16,7 +16,7 @@ describe('project', () => {
   it('validates the parts the backend needs', () => {
     const project = emptyProject()
     expect(validateProject(project)).toEqual(['no-bins', 'no-items'])
-    project.bins.push({ id: 'b', name: '', x: 10, y: 10, z: 0, copies: 1 })
+    project.bins.push({ id: 'b', name: '', x: 10, y: 10, z: 0, copies: 1, openSides: ['x-max'] })
     project.items.push({ id: 'i', name: '', x: 1, y: 1, z: 1, copies: 0, rotations: 'all' })
     project.settings.timeLimit = 0
     expect(validateProject(project)).toEqual(['bad-dimension:b', 'bad-copies:i', 'bad-time-limit'])
@@ -37,5 +37,15 @@ describe('project', () => {
     expect(totalBinVolume(demo)).toBe(12032 * 2352 * 2698)
     expect(totalItemVolume(demo)).toBeGreaterThan(totalBinVolume(demo))
     expect(newId('x')).not.toBe(newId('x'))
+  })
+
+  it('fills the fields older project files lack', () => {
+    const old = JSON.stringify({ schema: 'stowly/1', name: 'legacy', bins: [{ id: 'b', name: 'b', x: 10, y: 10, z: 10 }], items: [{ id: 'i', name: 'i', x: 1, y: 1, z: 1 }], settings: { solver: 'boxstacks' } })
+    const project = parseProject(old)
+    expect(project.bins[0].openSides).toEqual(['x-max'])
+    expect(project.items[0].group).toBe(0)
+    expect(project.items[0].rotations).toBe('all')
+    expect(project.settings.unloadingConstraint).toBe('none')
+    expect(project.settings.solver).toBe('boxstacks')
   })
 })

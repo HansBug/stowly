@@ -26,6 +26,7 @@ export function App() {
   const [drawer, setDrawer] = useState<'containers' | 'items' | null>(null)
   const [importing, setImporting] = useState(false)
   const client = useMemo(() => (backend ? new BackendClient(backend) : null), [backend])
+  const stacked = s.project.settings.solver === 'boxstacks'
 
   useEffect(() => {
     setupI18n(s.language)
@@ -91,8 +92,8 @@ export function App() {
   }
   const addPreset = (entry: PresetEntry) => {
     const lang = s.language === 'zh-CN' ? 'zh' : 'en'
-    if (drawer === 'containers') s.addBin({ id: newId('bin'), name: entry.name[lang], x: entry.x, y: entry.y, z: entry.z, copies: 1, cost: 1, maxWeight: entry.maxWeight ?? null })
-    else s.addItem({ id: newId('item'), name: entry.name[lang], x: entry.x, y: entry.y, z: entry.z, copies: 10, weight: entry.weight ?? null, rotations: 'all' })
+    if (drawer === 'containers') s.addBin({ id: newId('bin'), name: entry.name[lang], x: entry.x, y: entry.y, z: entry.z, copies: 1, cost: 1, maxWeight: entry.maxWeight ?? null, openSides: entry.openSides ?? ['x-max'] })
+    else s.addItem({ id: newId('item'), name: entry.name[lang], x: entry.x, y: entry.y, z: entry.z, copies: 10, weight: entry.weight ?? null, rotations: 'all', group: 0 })
   }
 
   return (
@@ -126,7 +127,7 @@ export function App() {
                   children: (
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <Space><Button type="primary" size="small" onClick={() => s.addBin()}>{t('bins.add')}</Button><Button size="small" onClick={() => setDrawer('containers')} disabled={!s.presets}>{t('bins.preset')}</Button></Space>
-                      <EditableTable rows={s.project.bins} unit={s.project.unit} kind="bins" onChange={s.updateBin} onRemove={s.removeBin} />
+                      <EditableTable rows={s.project.bins} unit={s.project.unit} kind="bins" stacking={stacked} onChange={s.updateBin} onRemove={s.removeBin} />
                     </Space>
                   )
                 },
@@ -135,7 +136,8 @@ export function App() {
                   children: (
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <Space><Button type="primary" size="small" onClick={() => s.addItem()}>{t('items.add')}</Button><Button size="small" onClick={() => setDrawer('items')} disabled={!s.presets}>{t('items.preset')}</Button></Space>
-                      <EditableTable rows={s.project.items} unit={s.project.unit} kind="items" onChange={s.updateItem} onRemove={s.removeItem} />
+                      {stacked ? <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t('items.stackingUpright')}</Typography.Text> : <Typography.Text type="secondary" style={{ fontSize: 12 }} data-testid="stacking-note">{t('items.stackingOnly')}</Typography.Text>}
+                      <EditableTable rows={s.project.items} unit={s.project.unit} kind="items" stacking={stacked} onChange={s.updateItem} onRemove={s.removeItem} />
                     </Space>
                   )
                 },

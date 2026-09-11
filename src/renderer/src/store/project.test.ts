@@ -38,7 +38,7 @@ describe('stowly store', () => {
     expect(state.project.bins).toHaveLength(1)
     expect(state.project.name).toBe('demo')
     // A complete instance replaces containers, cargo and settings.
-    const instance = { ...imported, name: 'thpack', bins: [{ id: 'b', name: 'b', x: 10, y: 10, z: 10, copies: 1, cost: 1, maxWeight: null }], settings: { ...imported.settings, timeLimit: 7 } }
+    const instance = { ...imported, name: 'thpack', bins: [{ id: 'b', name: 'b', x: 10, y: 10, z: 10, copies: 1, cost: 1, maxWeight: null, openSides: ['x-max' as const] }], settings: { ...imported.settings, timeLimit: 7 } }
     useStowly.getState().mergeImport(instance)
     expect(useStowly.getState().project).toMatchObject({ name: 'thpack', bins: instance.bins, items: instance.items, settings: { timeLimit: 7 } })
   })

@@ -2,6 +2,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { PackedBin } from '../lib/result'
+import type { Side } from '../lib/project'
 import { placementBoxes, type BoxDescriptor } from './boxes'
 
 export type { BoxDescriptor } from './boxes'
@@ -48,8 +49,11 @@ export class SceneController {
     this.animate()
   }
 
-  /** Replace the displayed bin. `colors` maps item ids to overrides. */
-  setBin(bin: PackedBin | null, colors?: Record<string, string | null | undefined>): void {
+  /**
+   * Replace the displayed bin. `colors` maps item ids to overrides; `openSides` are drawn amber, closed walls light grey;
+   * placements whose index is in `highlight` (the floating ones) get a red outline.
+   */
+  setBin(bin: PackedBin | null, colors?: Record<string, string | null | undefined>, openSides: Side[] = [], highlight: Set<number> = new Set()): void {
     this.clearGroup(this.itemGroup)
     this.clearGroup(this.binGroup)
     this.meshes = []
@@ -61,15 +65,15 @@ export class SceneController {
     const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(size.x, size.y, size.z)), new THREE.LineBasicMaterial({ color: 0x333333 }))
     outline.position.set(size.x / 2, size.y / 2, size.z / 2)
     this.binGroup.add(outline)
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(size.x, size.z), new THREE.MeshBasicMaterial({ color: 0xdde3ea, side: THREE.DoubleSide }))
-    floor.rotation.x = -Math.PI / 2
-    floor.position.set(size.x / 2, 0, size.z / 2)
-    this.binGroup.add(floor)
+    this.addFloor(size)
+    this.addWalls(size, openSides)
     for (const box of this.boxes) {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(...box.size), new THREE.MeshLambertMaterial({ color: box.color }))
       mesh.position.set(...box.center)
       mesh.userData.index = box.index
-      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.55 }))
+      const floating = highlight.has(box.index)
+      mesh.userData.floating = floating
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial(floating ? { color: 0xd4380d } : { color: 0x222222, transparent: true, opacity: 0.55 }))
       mesh.add(edges)
       this.itemGroup.add(mesh)
       this.meshes.push(mesh)
@@ -107,6 +111,58 @@ export class SceneController {
     this.clearGroup(this.binGroup)
     this.renderer.dispose()
     this.renderer.domElement.remove()
+  }
+
+  /**
+   * The floor is the one opaque face: a dark plate with a 0.5 m grid, plus a gravity arrow beside the origin corner, so
+   * "down" and "resting on the floor" can be read at a glance even after rotating the camera.
+   */
+  private addFloor(size: THREE.Vector3): void {
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(size.x, size.z), new THREE.MeshBasicMaterial({ color: 0xb9c2cc, side: THREE.DoubleSide }))
+    floor.rotation.x = -Math.PI / 2
+    floor.position.set(size.x / 2, 0, size.z / 2)
+    floor.userData.floor = true
+    this.binGroup.add(floor)
+    const step = 0.5
+    const points: number[] = []
+    for (let x = 0; x <= size.x + 1e-9; x += step) points.push(x, 0.001, 0, x, 0.001, size.z)
+    for (let z = 0; z <= size.z + 1e-9; z += step) points.push(0, 0.001, z, size.x, 0.001, z)
+    const grid = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(points, 3)), new THREE.LineBasicMaterial({ color: 0x7d8a99, transparent: true, opacity: 0.6 }))
+    grid.userData.grid = true
+    this.binGroup.add(grid)
+    const longest = Math.max(size.x, size.y, size.z)
+    const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(-0.08 * longest, size.y, -0.08 * longest), size.y, 0x333333, 0.12 * size.y, 0.08 * size.y)
+    arrow.userData.gravity = true
+    this.binGroup.add(arrow)
+  }
+
+  /**
+   * Walls of the container. Solver x is the length axis (three.js x), solver y the width (three.js z), solver z the height
+   * (three.js y). Open sides (doors, open tops) are amber and a little more opaque so the loading direction is visible.
+   */
+  private addWalls(size: THREE.Vector3, openSides: Side[]): void {
+    const walls: Array<{ side: Side; geometry: THREE.PlaneGeometry; position: [number, number, number]; rotation: [number, number, number] }> = [
+      { side: 'x-min', geometry: new THREE.PlaneGeometry(size.z, size.y), position: [0, size.y / 2, size.z / 2], rotation: [0, Math.PI / 2, 0] },
+      { side: 'x-max', geometry: new THREE.PlaneGeometry(size.z, size.y), position: [size.x, size.y / 2, size.z / 2], rotation: [0, Math.PI / 2, 0] },
+      { side: 'y-min', geometry: new THREE.PlaneGeometry(size.x, size.y), position: [size.x / 2, size.y / 2, 0], rotation: [0, 0, 0] },
+      { side: 'y-max', geometry: new THREE.PlaneGeometry(size.x, size.y), position: [size.x / 2, size.y / 2, size.z], rotation: [0, 0, 0] },
+      { side: 'top', geometry: new THREE.PlaneGeometry(size.x, size.z), position: [size.x / 2, size.y, size.z / 2], rotation: [-Math.PI / 2, 0, 0] }
+    ]
+    for (const wall of walls) {
+      const open = openSides.includes(wall.side)
+      const mesh = new THREE.Mesh(wall.geometry, new THREE.MeshBasicMaterial({ color: open ? 0xf5a623 : 0x9aa5b1, transparent: true, opacity: open ? 0.22 : 0.07, side: THREE.DoubleSide, depthWrite: false }))
+      mesh.position.set(...wall.position)
+      mesh.rotation.set(...wall.rotation)
+      mesh.userData.side = wall.side
+      mesh.userData.open = open
+      this.binGroup.add(mesh)
+      if (open) {
+        const frame = new THREE.LineSegments(new THREE.EdgesGeometry(wall.geometry), new THREE.LineBasicMaterial({ color: 0xd9822b }))
+        frame.position.copy(mesh.position)
+        frame.rotation.copy(mesh.rotation)
+        this.binGroup.add(frame)
+      }
+    }
   }
 
   private frameBin(size: THREE.Vector3): void {

@@ -87,3 +87,29 @@ def test_job_manager_marks_solver_exceptions_as_failed(project, monkeypatch):
         time.sleep(0.02)
     assert state.status == 'failed'
     assert 'refused by the solver' in state.error
+
+
+def test_boxstacks_keeps_items_upright_and_forwards_stacking_fields(project):
+    from packingsolver3d import Rotation, UnloadingConstraint
+    from stowly_backend.models import BinSpec, ItemSpec, Settings
+    stacked = project.model_copy(update={
+        'settings': Settings(solver='boxstacks', objective='knapsack', timeLimit=1.0, unloadingConstraint='increasing-x'),
+        'bins': [BinSpec(id='b', x=100, y=100, z=100, maxWeight=500, maxStackDensity=2000.0)],
+        'items': [ItemSpec(id='a', x=20, y=30, z=40, copies=6, weight=2.0, rotations='all', maxStack=3, maxWeightAbove=10.0, nestingHeight=5, group=1),
+                  ItemSpec(id='b', x=15, y=15, z=15, copies=4, rotations='fixed')],
+    })
+    instance = build_instance(stacked)
+    a, b = instance.item_types
+    assert list(a.rotations) == [Rotation.XYZ, Rotation.YXZ]  # "any" is upright for boxstacks
+    assert list(b.rotations) == [Rotation.XYZ]
+    assert (a.stackability_id, b.stackability_id) == (0, 1)
+    assert (a.maximum_stackability, a.maximum_weight_above, a.nesting_height, a.group_id) == (3, 10.0, 5, 1)
+    assert (b.maximum_stackability, b.maximum_weight_above, b.nesting_height, b.group_id, b.weight) == (None, None, None, 0, 0.0)
+    assert instance.bin_types[0].maximum_stack_density == 2000.0 / 1e6
+    assert instance.unloading_constraint == UnloadingConstraint.INCREASING_X
+    # the box solver has no stacking model: the same project maps to a plain instance
+    plain = build_instance(stacked.model_copy(update={'settings': Settings(solver='box', objective='knapsack', timeLimit=1.0, unloadingConstraint='increasing-x')}))
+    assert plain.unloading_constraint is None
+    assert plain.item_types[0].stackability_id is None and plain.item_types[0].maximum_stackability is None
+    assert plain.bin_types[0].maximum_stack_density is None
+    assert len(plain.item_types[0].rotations) == 6

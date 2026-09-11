@@ -35,4 +35,17 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel project={demoProject()} solving onChange={vi.fn()} onSolve={vi.fn()} />)
     expect(screen.getByTestId('solve-button').textContent).toContain('求解中')
   })
+
+  it('enables the unloading constraint for boxstacks only and explains upright placement', () => {
+    const onChange = vi.fn()
+    const project = demoProject()
+    const { rerender } = render(<SettingsPanel project={project} solving={false} onChange={onChange} onSolve={vi.fn()} />)
+    expect(screen.getByText(/box 求解器没有卸货约束/)).toBeInTheDocument()
+    expect(screen.queryByTestId('upright-note')).not.toBeInTheDocument()
+    const stacked = { ...project, settings: { ...project.settings, solver: 'boxstacks' as const } }
+    rerender(<SettingsPanel project={stacked} solving={false} onChange={onChange} onSolve={vi.fn()} />)
+    expect(screen.getByTestId('upright-note')).toBeInTheDocument()
+    pickOption(3, '各组沿 x 分段（门在 x 最大端）')
+    expect(onChange).toHaveBeenCalledWith({ unloadingConstraint: 'increasing-x' })
+  })
 })

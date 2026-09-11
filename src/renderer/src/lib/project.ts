@@ -5,6 +5,12 @@ export type Solver = 'box' | 'boxstacks'
 export type Objective = 'bin-packing' | 'knapsack' | 'variable-sized-bin-packing'
 export type OptimizationMode = 'anytime' | 'not-anytime' | 'not-anytime-deterministic' | 'not-anytime-sequential'
 export type Unit = 'mm' | 'cm' | 'm' | 'in'
+/** Open sides of a container. x is the length axis, so 'x-max' is the far end where container and truck doors are. */
+export type Side = 'x-min' | 'x-max' | 'y-min' | 'y-max' | 'top'
+export const SIDES: Side[] = ['x-min', 'x-max', 'y-min', 'y-max', 'top']
+/** packingsolver3d's boxstacks unloading constraints: door at the x-max (or y-max) end, group 0 unloaded first. */
+export type UnloadingConstraint = 'none' | 'only-x-movements' | 'only-y-movements' | 'increasing-x' | 'increasing-y'
+export const UNLOADING_CONSTRAINTS: UnloadingConstraint[] = ['none', 'only-x-movements', 'only-y-movements', 'increasing-x', 'increasing-y']
 
 export interface BinSpec {
   id: string
@@ -15,6 +21,9 @@ export interface BinSpec {
   copies: number
   cost?: number | null
   maxWeight?: number | null
+  /** boxstacks only: heaviest allowed floor load, kg/m². */
+  maxStackDensity?: number | null
+  openSides: Side[]
 }
 
 export interface ItemSpec {
@@ -28,6 +37,12 @@ export interface ItemSpec {
   profit?: number | null
   rotations: Rotations
   color?: string | null
+  /** boxstacks only: stacking rules; the box solver has no stacking model and ignores them. */
+  maxStack?: number | null
+  maxWeightAbove?: number | null
+  nestingHeight?: number | null
+  /** Unloading group for the boxstacks unloading constraints; 0 is unloaded first. */
+  group?: number
 }
 
 export interface Settings {
@@ -35,6 +50,7 @@ export interface Settings {
   objective: Objective
   timeLimit: number
   optimizationMode: OptimizationMode
+  unloadingConstraint: UnloadingConstraint
 }
 
 export interface Project {
@@ -57,7 +73,7 @@ export function newId(prefix: string): string {
 }
 
 export function emptyProject(name = ''): Project {
-  return { schema: SCHEMA, name, unit: 'mm', bins: [], items: [], settings: { solver: 'box', objective: 'bin-packing', timeLimit: 10, optimizationMode: 'anytime' } }
+  return { schema: SCHEMA, name, unit: 'mm', bins: [], items: [], settings: { solver: 'box', objective: 'bin-packing', timeLimit: 10, optimizationMode: 'anytime', unloadingConstraint: 'none' } }
 }
 
 /** Convert a length shown in the project unit to the millimetre integer the solver needs. */
@@ -112,8 +128,8 @@ export function parseProject(text: string): Project {
     ...base,
     ...raw,
     unit: raw.unit ?? 'mm',
-    bins: (raw.bins ?? []).map((b) => ({ ...b, copies: b.copies ?? 1 })),
-    items: (raw.items ?? []).map((i) => ({ ...i, copies: i.copies ?? 1, rotations: i.rotations ?? 'all' })),
+    bins: (raw.bins ?? []).map((b) => ({ ...b, copies: b.copies ?? 1, openSides: b.openSides ?? ['x-max'] })),
+    items: (raw.items ?? []).map((i) => ({ ...i, copies: i.copies ?? 1, rotations: i.rotations ?? 'all', group: i.group ?? 0 })),
     settings: { ...base.settings, ...(raw.settings ?? {}) }
   }
 }
@@ -121,7 +137,7 @@ export function parseProject(text: string): Project {
 /** A ready-made project so the first click shows something: a 40' high cube with a mix of China Post cartons. */
 export function demoProject(): Project {
   const project = emptyProject('demo')
-  project.bins = [{ id: 'bin-40hq', name: "40' HQ", x: 12032, y: 2352, z: 2698, copies: 1, cost: 1, maxWeight: 26460 }]
+  project.bins = [{ id: 'bin-40hq', name: "40' HQ", x: 12032, y: 2352, z: 2698, copies: 1, cost: 1, maxWeight: 26460, openSides: ['x-max'] }]
   const cartons: [string, number, number, number, number, number][] = [
     ['邮政 1 号纸箱', 530, 290, 370, 300, 8],
     ['邮政 2 号纸箱', 530, 230, 290, 300, 6],
@@ -129,7 +145,7 @@ export function demoProject(): Project {
     ['欧标托盘整托', 1200, 800, 1200, 24, 450],
     ['IBC 吨桶', 1200, 1000, 1150, 12, 1100]
   ]
-  project.items = cartons.map(([name, x, y, z, copies, weight], index) => ({ id: `item-${index + 1}`, name, x, y, z, copies, weight, rotations: index < 3 ? 'all' : 'upright' }))
-  project.settings = { solver: 'box', objective: 'knapsack', timeLimit: 10, optimizationMode: 'anytime' }
+  project.items = cartons.map(([name, x, y, z, copies, weight], index) => ({ id: `item-${index + 1}`, name, x, y, z, copies, weight, rotations: index < 3 ? 'all' : 'upright', group: 0 }))
+  project.settings = { solver: 'box', objective: 'knapsack', timeLimit: 10, optimizationMode: 'anytime', unloadingConstraint: 'none' }
   return project
 }

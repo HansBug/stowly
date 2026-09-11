@@ -1,410 +1,509 @@
 [
- {
-  "id": "iso-20gp",
-  "category": "iso-container",
-  "name": {
-   "zh": "20' 标准干货箱 (20GP / 22G1)",
-   "en": "20' dry standard (20GP / 22G1)"
+  {
+    "id": "iso-20gp",
+    "category": "iso-container",
+    "name": {
+      "zh": "20' 标准干货箱 (20GP / 22G1)",
+      "en": "20' dry standard (20GP / 22G1)"
+    },
+    "x": 5898,
+    "y": 2352,
+    "z": 2393,
+    "maxWeight": 28180,
+    "note": {
+      "zh": "内尺寸典型值；门开口约 2340×2280 mm；总重上限 30480 kg",
+      "en": "Typical interior; door opening about 2340 x 2280 mm; max gross 30,480 kg"
+    },
+    "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 5898,
-  "y": 2352,
-  "z": 2393,
-  "maxWeight": 28180,
-  "note": {
-   "zh": "内尺寸典型值；门开口约 2340×2280 mm；总重上限 30480 kg",
-   "en": "Typical interior; door opening about 2340 x 2280 mm; max gross 30,480 kg"
+  {
+    "id": "iso-40gp",
+    "category": "iso-container",
+    "name": {
+      "zh": "40' 标准干货箱 (40GP / 42G1)",
+      "en": "40' dry standard (40GP / 42G1)"
+    },
+    "x": 12032,
+    "y": 2352,
+    "z": 2393,
+    "maxWeight": 26680,
+    "note": {
+      "zh": "门开口约 2340×2280 mm",
+      "en": "Door opening about 2340 x 2280 mm"
+    },
+    "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)"
- },
- {
-  "id": "iso-40gp",
-  "category": "iso-container",
-  "name": {
-   "zh": "40' 标准干货箱 (40GP / 42G1)",
-   "en": "40' dry standard (40GP / 42G1)"
+  {
+    "id": "iso-40hq",
+    "category": "iso-container",
+    "name": {
+      "zh": "40' 高箱 (40HQ / 45G1)",
+      "en": "40' high cube (40HQ / 45G1)"
+    },
+    "x": 12032,
+    "y": 2352,
+    "z": 2698,
+    "maxWeight": 26460,
+    "note": {
+      "zh": "门开口约 2340×2585 mm",
+      "en": "Door opening about 2340 x 2585 mm"
+    },
+    "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 12032,
-  "y": 2352,
-  "z": 2393,
-  "maxWeight": 26680,
-  "note": {
-   "zh": "门开口约 2340×2280 mm",
-   "en": "Door opening about 2340 x 2280 mm"
+  {
+    "id": "iso-45hq",
+    "category": "iso-container",
+    "name": {
+      "zh": "45' 高箱 (45HQ)",
+      "en": "45' high cube (45HQ)"
+    },
+    "x": 13556,
+    "y": 2352,
+    "z": 2698,
+    "maxWeight": 27600,
+    "note": {
+      "zh": "各承运人载重 25.7–27.6 t 不一",
+      "en": "Payload quoted between 25.7 and 27.6 t by different carriers"
+    },
+    "source": "Hapag-Lloyd container specifications (typical values; interior dimensions and payload vary by manufacturer and build)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)"
- },
- {
-  "id": "iso-40hq",
-  "category": "iso-container",
-  "name": {
-   "zh": "40' 高箱 (40HQ / 45G1)",
-   "en": "40' high cube (40HQ / 45G1)"
+  {
+    "id": "iso-20rf",
+    "category": "iso-container",
+    "name": {
+      "zh": "20' 冷藏箱 (20RF)",
+      "en": "20' reefer (20RF)"
+    },
+    "x": 5444,
+    "y": 2290,
+    "z": 2276,
+    "maxWeight": 27400,
+    "note": {
+      "zh": "内尺寸因机组占位比干货箱小；数值为典型值",
+      "en": "Interior smaller than a dry box because of the cooling unit; typical values"
+    },
+    "source": "Hapag-Lloyd container specifications (typical values; interior dimensions and payload vary by manufacturer and build)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 12032,
-  "y": 2352,
-  "z": 2698,
-  "maxWeight": 26460,
-  "note": {
-   "zh": "门开口约 2340×2585 mm",
-   "en": "Door opening about 2340 x 2585 mm"
+  {
+    "id": "iso-40rh",
+    "category": "iso-container",
+    "name": {
+      "zh": "40' 高冷藏箱 (40RH)",
+      "en": "40' high-cube reefer (40RH)"
+    },
+    "x": 11583,
+    "y": 2290,
+    "z": 2554,
+    "maxWeight": 29000,
+    "note": {
+      "zh": "典型值",
+      "en": "Typical values"
+    },
+    "source": "Hapag-Lloyd container specifications (typical values; interior dimensions and payload vary by manufacturer and build)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)"
- },
- {
-  "id": "iso-45hq",
-  "category": "iso-container",
-  "name": {
-   "zh": "45' 高箱 (45HQ)",
-   "en": "45' high cube (45HQ)"
+  {
+    "id": "truck-cn-4m2",
+    "category": "truck-cn",
+    "name": {
+      "zh": "4.2 米厢式货车",
+      "en": "4.2 m box truck (China)"
+    },
+    "x": 4200,
+    "y": 1800,
+    "z": 1800,
+    "maxWeight": 2000,
+    "note": {
+      "zh": "蓝牌轻卡，车厢 4.2×1.8×1.8 m 为常见规格；合规载重通常 1.5–2 t",
+      "en": "Blue-plate light truck, common body 4.2 x 1.8 x 1.8 m; legal payload usually 1.5-2 t"
+    },
+    "source": "Chinese logistics body-size charts (cnblogs 货车尺寸大全, 汽车之家); payload per GB 1589-2016 blue-plate limits",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 13556,
-  "y": 2352,
-  "z": 2698,
-  "maxWeight": 27600,
-  "note": {
-   "zh": "各承运人载重 25.7–27.6 t 不一",
-   "en": "Payload quoted between 25.7 and 27.6 t by different carriers"
+  {
+    "id": "truck-cn-6m8",
+    "category": "truck-cn",
+    "name": {
+      "zh": "6.8 米厢式货车",
+      "en": "6.8 m box truck (China)"
+    },
+    "x": 6800,
+    "y": 2400,
+    "z": 2600,
+    "maxWeight": 10000,
+    "note": {
+      "zh": "省内中短途；≤40 m³",
+      "en": "Regional distribution; up to about 40 m3"
+    },
+    "source": "Chinese logistics body-size charts (cnblogs, pcauto)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "Hapag-Lloyd container specifications (typical values; interior dimensions and payload vary by manufacturer and build)"
- },
- {
-  "id": "iso-20rf",
-  "category": "iso-container",
-  "name": {
-   "zh": "20' 冷藏箱 (20RF)",
-   "en": "20' reefer (20RF)"
+  {
+    "id": "truck-cn-7m6",
+    "category": "truck-cn",
+    "name": {
+      "zh": "7.6 米厢式货车",
+      "en": "7.6 m box truck (China)"
+    },
+    "x": 7600,
+    "y": 2400,
+    "z": 2700,
+    "maxWeight": 12000,
+    "note": {
+      "zh": "≤45 m³",
+      "en": "Up to about 45 m3"
+    },
+    "source": "Chinese logistics body-size charts (cnblogs, pcauto)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 5444,
-  "y": 2290,
-  "z": 2276,
-  "maxWeight": 27400,
-  "note": {
-   "zh": "内尺寸因机组占位比干货箱小；数值为典型值",
-   "en": "Interior smaller than a dry box because of the cooling unit; typical values"
+  {
+    "id": "truck-cn-9m6",
+    "category": "truck-cn",
+    "name": {
+      "zh": "9.6 米厢式货车",
+      "en": "9.6 m box truck (China)"
+    },
+    "x": 9600,
+    "y": 2350,
+    "z": 2700,
+    "maxWeight": 16000,
+    "note": {
+      "zh": "净宽常按 2.35 m 计；≤60 m³；标载 16–18 t",
+      "en": "Net width usually taken as 2.35 m; up to about 60 m3; rated 16-18 t"
+    },
+    "source": "Chinese logistics body-size charts and carrier specs (天南物流 9.6 米货车内径)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "Hapag-Lloyd container specifications (typical values; interior dimensions and payload vary by manufacturer and build)"
- },
- {
-  "id": "iso-40rh",
-  "category": "iso-container",
-  "name": {
-   "zh": "40' 高冷藏箱 (40RH)",
-   "en": "40' high-cube reefer (40RH)"
+  {
+    "id": "truck-cn-13m",
+    "category": "truck-cn",
+    "name": {
+      "zh": "13 米厢式/高栏货车",
+      "en": "13 m box / high-side truck (China)"
+    },
+    "x": 13000,
+    "y": 2400,
+    "z": 2500,
+    "maxWeight": 30000,
+    "note": {
+      "zh": "≤75 m³",
+      "en": "Up to about 75 m3"
+    },
+    "source": "Chinese logistics body-size charts (cnblogs, pcauto)",
+    "openSides": [
+      "x-max",
+      "top"
+    ]
   },
-  "x": 11583,
-  "y": 2290,
-  "z": 2554,
-  "maxWeight": 29000,
-  "note": {
-   "zh": "典型值",
-   "en": "Typical values"
+  {
+    "id": "truck-cn-17m5",
+    "category": "truck-cn",
+    "name": {
+      "zh": "17.5 米平板车（装载高度参考 2.7 m）",
+      "en": "17.5 m flatbed (China; 2.7 m loading height as reference)"
+    },
+    "x": 17500,
+    "y": 3000,
+    "z": 2700,
+    "maxWeight": 30000,
+    "note": {
+      "zh": "平板无厢体，高度为常用装载高度参考",
+      "en": "Open flatbed; the height is a customary loading-height reference, not a wall"
+    },
+    "source": "Chinese logistics body-size charts (cnblogs, 天南物流)",
+    "openSides": [
+      "x-min",
+      "x-max",
+      "y-min",
+      "y-max",
+      "top"
+    ]
   },
-  "source": "Hapag-Lloyd container specifications (typical values; interior dimensions and payload vary by manufacturer and build)"
- },
- {
-  "id": "truck-cn-4m2",
-  "category": "truck-cn",
-  "name": {
-   "zh": "4.2 米厢式货车",
-   "en": "4.2 m box truck (China)"
+  {
+    "id": "trailer-eu-13m6",
+    "category": "truck-eu-us",
+    "name": {
+      "zh": "欧标 13.6 m 半挂车（篷布/厢式）",
+      "en": "EU 13.6 m semi-trailer (curtainsider / box)"
+    },
+    "x": 13600,
+    "y": 2480,
+    "z": 2700,
+    "maxWeight": 24000,
+    "note": {
+      "zh": "可装 33 个欧标托盘；内高 2.65–2.75 m 不一",
+      "en": "Takes 33 EUR pallets; interior height 2.65-2.75 m depending on build"
+    },
+    "source": "Typical EU trailer builder specifications (Schmitz Cargobull, Krone data sheets)",
+    "openSides": [
+      "x-max",
+      "y-min",
+      "y-max"
+    ]
   },
-  "x": 4200,
-  "y": 1800,
-  "z": 1800,
-  "maxWeight": 2000,
-  "note": {
-   "zh": "蓝牌轻卡，车厢 4.2×1.8×1.8 m 为常见规格；合规载重通常 1.5–2 t",
-   "en": "Blue-plate light truck, common body 4.2 x 1.8 x 1.8 m; legal payload usually 1.5-2 t"
+  {
+    "id": "trailer-eu-mega",
+    "category": "truck-eu-us",
+    "name": {
+      "zh": "欧标 13.6 m Mega 半挂车",
+      "en": "EU 13.6 m mega trailer"
+    },
+    "x": 13600,
+    "y": 2480,
+    "z": 3000,
+    "maxWeight": 24000,
+    "note": {
+      "zh": "低底盘，内高约 3.0 m",
+      "en": "Low-deck, about 3.0 m interior height"
+    },
+    "source": "Typical EU trailer builder specifications",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "Chinese logistics body-size charts (cnblogs 货车尺寸大全, 汽车之家); payload per GB 1589-2016 blue-plate limits"
- },
- {
-  "id": "truck-cn-6m8",
-  "category": "truck-cn",
-  "name": {
-   "zh": "6.8 米厢式货车",
-   "en": "6.8 m box truck (China)"
+  {
+    "id": "truck-eu-7t5",
+    "category": "truck-eu-us",
+    "name": {
+      "zh": "欧标 7.5 t 厢式货车",
+      "en": "EU 7.5 t box truck"
+    },
+    "x": 6100,
+    "y": 2450,
+    "z": 2400,
+    "maxWeight": 3000,
+    "note": {
+      "zh": "典型值，各车型差异大",
+      "en": "Typical; bodies vary widely"
+    },
+    "source": "Typical body specifications of 7.5 t class trucks",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 6800,
-  "y": 2400,
-  "z": 2600,
-  "maxWeight": 10000,
-  "note": {
-   "zh": "省内中短途；≤40 m³",
-   "en": "Regional distribution; up to about 40 m3"
+  {
+    "id": "trailer-us-53",
+    "category": "truck-eu-us",
+    "name": {
+      "zh": "美标 53' 干货挂车",
+      "en": "US 53' dry van trailer"
+    },
+    "x": 16002,
+    "y": 2502,
+    "z": 2794,
+    "maxWeight": 20400,
+    "note": {
+      "zh": "内尺寸 52'6\" × 98.5\" × 110\"",
+      "en": "Interior 52'6\" x 98.5\" x 110\""
+    },
+    "source": "Typical US 53 ft dry van specifications (Wabash, Great Dane data sheets)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "source": "Chinese logistics body-size charts (cnblogs, pcauto)"
- },
- {
-  "id": "truck-cn-7m6",
-  "category": "truck-cn",
-  "name": {
-   "zh": "7.6 米厢式货车",
-   "en": "7.6 m box truck (China)"
+  {
+    "id": "trailer-us-48",
+    "category": "truck-eu-us",
+    "name": {
+      "zh": "美标 48' 干货挂车",
+      "en": "US 48' dry van trailer"
+    },
+    "x": 14478,
+    "y": 2502,
+    "z": 2794,
+    "maxWeight": 20400,
+    "note": {
+      "zh": "典型值",
+      "en": "Typical values"
+    },
+    "source": "Typical US 48 ft dry van specifications",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 7600,
-  "y": 2400,
-  "z": 2700,
-  "maxWeight": 12000,
-  "note": {
-   "zh": "≤45 m³",
-   "en": "Up to about 45 m3"
+  {
+    "id": "pallet-eur1",
+    "category": "pallet",
+    "name": {
+      "zh": "欧标托盘 EUR 1 (1200×800)，装载高度 1.8 m",
+      "en": "EUR 1 pallet (1200 x 800), 1.8 m load height"
+    },
+    "x": 1200,
+    "y": 800,
+    "z": 1800,
+    "maxWeight": 1500,
+    "note": {
+      "zh": "托盘本身高 144 mm；1.8 m 为常用堆码高度上限",
+      "en": "Pallet itself is 144 mm high; 1.8 m is a customary stacking limit"
+    },
+    "source": "EPAL EUR 1 specification (UIC 435-2); load height is a convention",
+    "openSides": [
+      "x-min",
+      "x-max",
+      "y-min",
+      "y-max",
+      "top"
+    ]
   },
-  "source": "Chinese logistics body-size charts (cnblogs, pcauto)"
- },
- {
-  "id": "truck-cn-9m6",
-  "category": "truck-cn",
-  "name": {
-   "zh": "9.6 米厢式货车",
-   "en": "9.6 m box truck (China)"
+  {
+    "id": "pallet-eur2",
+    "category": "pallet",
+    "name": {
+      "zh": "欧标托盘 EUR 2 (1200×1000)，装载高度 1.8 m",
+      "en": "EUR 2 pallet (1200 x 1000), 1.8 m load height"
+    },
+    "x": 1200,
+    "y": 1000,
+    "z": 1800,
+    "maxWeight": 1500,
+    "note": {
+      "zh": "",
+      "en": ""
+    },
+    "source": "EPAL EUR 2 specification",
+    "openSides": [
+      "x-min",
+      "x-max",
+      "y-min",
+      "y-max",
+      "top"
+    ]
   },
-  "x": 9600,
-  "y": 2350,
-  "z": 2700,
-  "maxWeight": 16000,
-  "note": {
-   "zh": "净宽常按 2.35 m 计；≤60 m³；标载 16–18 t",
-   "en": "Net width usually taken as 2.35 m; up to about 60 m3; rated 16-18 t"
+  {
+    "id": "pallet-eur6",
+    "category": "pallet",
+    "name": {
+      "zh": "欧标半托盘 EUR 6 (800×600)，装载高度 1.5 m",
+      "en": "EUR 6 half pallet (800 x 600), 1.5 m load height"
+    },
+    "x": 800,
+    "y": 600,
+    "z": 1500,
+    "maxWeight": 500,
+    "note": {
+      "zh": "",
+      "en": ""
+    },
+    "source": "EPAL EUR 6 specification",
+    "openSides": [
+      "x-min",
+      "x-max",
+      "y-min",
+      "y-max",
+      "top"
+    ]
   },
-  "source": "Chinese logistics body-size charts and carrier specs (天南物流 9.6 米货车内径)"
- },
- {
-  "id": "truck-cn-13m",
-  "category": "truck-cn",
-  "name": {
-   "zh": "13 米厢式/高栏货车",
-   "en": "13 m box / high-side truck (China)"
+  {
+    "id": "pallet-gma-48x40",
+    "category": "pallet",
+    "name": {
+      "zh": "美标 GMA 托盘 48×40 in (1219×1016)，装载高度 1.8 m",
+      "en": "US GMA pallet 48 x 40 in (1219 x 1016), 1.8 m load height"
+    },
+    "x": 1219,
+    "y": 1016,
+    "z": 1800,
+    "maxWeight": 1200,
+    "note": {
+      "zh": "",
+      "en": ""
+    },
+    "source": "GMA / ISO 6780 1219 x 1016 pallet",
+    "openSides": [
+      "x-min",
+      "x-max",
+      "y-min",
+      "y-max",
+      "top"
+    ]
   },
-  "x": 13000,
-  "y": 2400,
-  "z": 2500,
-  "maxWeight": 30000,
-  "note": {
-   "zh": "≤75 m³",
-   "en": "Up to about 75 m3"
+  {
+    "id": "pallet-asia-1100",
+    "category": "pallet",
+    "name": {
+      "zh": "亚标托盘 1100×1100，装载高度 1.8 m",
+      "en": "Asian pallet 1100 x 1100, 1.8 m load height"
+    },
+    "x": 1100,
+    "y": 1100,
+    "z": 1800,
+    "maxWeight": 1000,
+    "note": {
+      "zh": "ISO 6780 亚洲/日本常用",
+      "en": "ISO 6780 Asian / JIS size"
+    },
+    "source": "ISO 6780 / JIS Z 0601",
+    "openSides": [
+      "x-min",
+      "x-max",
+      "y-min",
+      "y-max",
+      "top"
+    ]
   },
-  "source": "Chinese logistics body-size charts (cnblogs, pcauto)"
- },
- {
-  "id": "truck-cn-17m5",
-  "category": "truck-cn",
-  "name": {
-   "zh": "17.5 米平板车（装载高度参考 2.7 m）",
-   "en": "17.5 m flatbed (China; 2.7 m loading height as reference)"
+  {
+    "id": "rail-iso-40hq",
+    "category": "rail",
+    "name": {
+      "zh": "铁路集装箱班列：40' 高箱",
+      "en": "Rail container train: 40' high cube"
+    },
+    "x": 12032,
+    "y": 2352,
+    "z": 2698,
+    "maxWeight": 26460,
+    "note": {
+      "zh": "铁路多式联运按 ISO 箱装载，尺寸同 40HQ",
+      "en": "Rail intermodal loads ISO boxes; same interior as 40HQ"
+    },
+    "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)",
+    "openSides": [
+      "x-max"
+    ]
   },
-  "x": 17500,
-  "y": 3000,
-  "z": 2700,
-  "maxWeight": 30000,
-  "note": {
-   "zh": "平板无厢体，高度为常用装载高度参考",
-   "en": "Open flatbed; the height is a customary loading-height reference, not a wall"
-  },
-  "source": "Chinese logistics body-size charts (cnblogs, 天南物流)"
- },
- {
-  "id": "trailer-eu-13m6",
-  "category": "truck-eu-us",
-  "name": {
-   "zh": "欧标 13.6 m 半挂车（篷布/厢式）",
-   "en": "EU 13.6 m semi-trailer (curtainsider / box)"
-  },
-  "x": 13600,
-  "y": 2480,
-  "z": 2700,
-  "maxWeight": 24000,
-  "note": {
-   "zh": "可装 33 个欧标托盘；内高 2.65–2.75 m 不一",
-   "en": "Takes 33 EUR pallets; interior height 2.65-2.75 m depending on build"
-  },
-  "source": "Typical EU trailer builder specifications (Schmitz Cargobull, Krone data sheets)"
- },
- {
-  "id": "trailer-eu-mega",
-  "category": "truck-eu-us",
-  "name": {
-   "zh": "欧标 13.6 m Mega 半挂车",
-   "en": "EU 13.6 m mega trailer"
-  },
-  "x": 13600,
-  "y": 2480,
-  "z": 3000,
-  "maxWeight": 24000,
-  "note": {
-   "zh": "低底盘，内高约 3.0 m",
-   "en": "Low-deck, about 3.0 m interior height"
-  },
-  "source": "Typical EU trailer builder specifications"
- },
- {
-  "id": "truck-eu-7t5",
-  "category": "truck-eu-us",
-  "name": {
-   "zh": "欧标 7.5 t 厢式货车",
-   "en": "EU 7.5 t box truck"
-  },
-  "x": 6100,
-  "y": 2450,
-  "z": 2400,
-  "maxWeight": 3000,
-  "note": {
-   "zh": "典型值，各车型差异大",
-   "en": "Typical; bodies vary widely"
-  },
-  "source": "Typical body specifications of 7.5 t class trucks"
- },
- {
-  "id": "trailer-us-53",
-  "category": "truck-eu-us",
-  "name": {
-   "zh": "美标 53' 干货挂车",
-   "en": "US 53' dry van trailer"
-  },
-  "x": 16002,
-  "y": 2502,
-  "z": 2794,
-  "maxWeight": 20400,
-  "note": {
-   "zh": "内尺寸 52'6\" × 98.5\" × 110\"",
-   "en": "Interior 52'6\" x 98.5\" x 110\""
-  },
-  "source": "Typical US 53 ft dry van specifications (Wabash, Great Dane data sheets)"
- },
- {
-  "id": "trailer-us-48",
-  "category": "truck-eu-us",
-  "name": {
-   "zh": "美标 48' 干货挂车",
-   "en": "US 48' dry van trailer"
-  },
-  "x": 14478,
-  "y": 2502,
-  "z": 2794,
-  "maxWeight": 20400,
-  "note": {
-   "zh": "典型值",
-   "en": "Typical values"
-  },
-  "source": "Typical US 48 ft dry van specifications"
- },
- {
-  "id": "pallet-eur1",
-  "category": "pallet",
-  "name": {
-   "zh": "欧标托盘 EUR 1 (1200×800)，装载高度 1.8 m",
-   "en": "EUR 1 pallet (1200 x 800), 1.8 m load height"
-  },
-  "x": 1200,
-  "y": 800,
-  "z": 1800,
-  "maxWeight": 1500,
-  "note": {
-   "zh": "托盘本身高 144 mm；1.8 m 为常用堆码高度上限",
-   "en": "Pallet itself is 144 mm high; 1.8 m is a customary stacking limit"
-  },
-  "source": "EPAL EUR 1 specification (UIC 435-2); load height is a convention"
- },
- {
-  "id": "pallet-eur2",
-  "category": "pallet",
-  "name": {
-   "zh": "欧标托盘 EUR 2 (1200×1000)，装载高度 1.8 m",
-   "en": "EUR 2 pallet (1200 x 1000), 1.8 m load height"
-  },
-  "x": 1200,
-  "y": 1000,
-  "z": 1800,
-  "maxWeight": 1500,
-  "note": {
-   "zh": "",
-   "en": ""
-  },
-  "source": "EPAL EUR 2 specification"
- },
- {
-  "id": "pallet-eur6",
-  "category": "pallet",
-  "name": {
-   "zh": "欧标半托盘 EUR 6 (800×600)，装载高度 1.5 m",
-   "en": "EUR 6 half pallet (800 x 600), 1.5 m load height"
-  },
-  "x": 800,
-  "y": 600,
-  "z": 1500,
-  "maxWeight": 500,
-  "note": {
-   "zh": "",
-   "en": ""
-  },
-  "source": "EPAL EUR 6 specification"
- },
- {
-  "id": "pallet-gma-48x40",
-  "category": "pallet",
-  "name": {
-   "zh": "美标 GMA 托盘 48×40 in (1219×1016)，装载高度 1.8 m",
-   "en": "US GMA pallet 48 x 40 in (1219 x 1016), 1.8 m load height"
-  },
-  "x": 1219,
-  "y": 1016,
-  "z": 1800,
-  "maxWeight": 1200,
-  "note": {
-   "zh": "",
-   "en": ""
-  },
-  "source": "GMA / ISO 6780 1219 x 1016 pallet"
- },
- {
-  "id": "pallet-asia-1100",
-  "category": "pallet",
-  "name": {
-   "zh": "亚标托盘 1100×1100，装载高度 1.8 m",
-   "en": "Asian pallet 1100 x 1100, 1.8 m load height"
-  },
-  "x": 1100,
-  "y": 1100,
-  "z": 1800,
-  "maxWeight": 1000,
-  "note": {
-   "zh": "ISO 6780 亚洲/日本常用",
-   "en": "ISO 6780 Asian / JIS size"
-  },
-  "source": "ISO 6780 / JIS Z 0601"
- },
- {
-  "id": "rail-iso-40hq",
-  "category": "rail",
-  "name": {
-   "zh": "铁路集装箱班列：40' 高箱",
-   "en": "Rail container train: 40' high cube"
-  },
-  "x": 12032,
-  "y": 2352,
-  "z": 2698,
-  "maxWeight": 26460,
-  "note": {
-   "zh": "铁路多式联运按 ISO 箱装载，尺寸同 40HQ",
-   "en": "Rail intermodal loads ISO boxes; same interior as 40HQ"
-  },
-  "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)"
- },
- {
-  "id": "rail-iso-20gp",
-  "category": "rail",
-  "name": {
-   "zh": "铁路集装箱班列：20' 标准箱",
-   "en": "Rail container train: 20' standard"
-  },
-  "x": 5898,
-  "y": 2352,
-  "z": 2393,
-  "maxWeight": 28180,
-  "note": {
-   "zh": "尺寸同 20GP",
-   "en": "Same interior as 20GP"
-  },
-  "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)"
- }
+  {
+    "id": "rail-iso-20gp",
+    "category": "rail",
+    "name": {
+      "zh": "铁路集装箱班列：20' 标准箱",
+      "en": "Rail container train: 20' standard"
+    },
+    "x": 5898,
+    "y": 2352,
+    "z": 2393,
+    "maxWeight": 28180,
+    "note": {
+      "zh": "尺寸同 20GP",
+      "en": "Same interior as 20GP"
+    },
+    "source": "ISO 668 external envelope; interior/door/payload are typical carrier values (Hapag-Lloyd, OOCL spec sheets)",
+    "openSides": [
+      "x-max"
+    ]
+  }
 ]

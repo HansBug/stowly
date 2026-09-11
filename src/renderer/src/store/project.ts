@@ -71,11 +71,11 @@ export const useStowly = create<StowlyState>((set, get) => ({
   setUnit: (unit) => set((s) => ({ project: { ...s.project, unit }, dirty: true })),
   updateSettings: (patch) => set((s) => ({ project: { ...s.project, settings: { ...s.project.settings, ...patch } }, dirty: true })),
   addBin: (bin = {}) =>
-    set((s) => ({ project: { ...s.project, bins: [...s.project.bins, { id: newId('bin'), name: '', x: 1200, y: 800, z: 1000, copies: 1, ...bin }] }, dirty: true })),
+    set((s) => ({ project: { ...s.project, bins: [...s.project.bins, { id: newId('bin'), name: '', x: 1200, y: 800, z: 1000, copies: 1, openSides: ['x-max'], ...bin }] }, dirty: true })),
   updateBin: (id, patch) => set((s) => ({ project: { ...s.project, bins: s.project.bins.map((b) => (b.id === id ? { ...b, ...patch } : b)) }, dirty: true })),
   removeBin: (id) => set((s) => ({ project: { ...s.project, bins: s.project.bins.filter((b) => b.id !== id) }, dirty: true })),
   addItem: (item = {}) =>
-    set((s) => ({ project: { ...s.project, items: [...s.project.items, { id: newId('item'), name: '', x: 400, y: 300, z: 300, copies: 10, rotations: 'all', ...item }] }, dirty: true })),
+    set((s) => ({ project: { ...s.project, items: [...s.project.items, { id: newId('item'), name: '', x: 400, y: 300, z: 300, copies: 10, rotations: 'all', group: 0, ...item }] }, dirty: true })),
   updateItem: (id, patch) => set((s) => ({ project: { ...s.project, items: s.project.items.map((i) => (i.id === id ? { ...i, ...patch } : i)) }, dirty: true })),
   removeItem: (id) => set((s) => ({ project: { ...s.project, items: s.project.items.filter((i) => i.id !== id) }, dirty: true })),
   // A complete instance (containers and cargo) replaces the project; a plain cargo or container list is appended to it.

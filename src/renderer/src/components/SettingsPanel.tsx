@@ -1,6 +1,6 @@
-import { Alert, Button, Form, InputNumber, Select, Space, Typography } from 'antd'
+import { Alert, Button, Form, InputNumber, Select, Space, Tooltip, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { totalBinVolume, totalItemVolume, validateProject, type Objective, type OptimizationMode, type Project, type Settings, type Solver } from '../lib/project'
+import { totalBinVolume, totalItemVolume, UNLOADING_CONSTRAINTS, validateProject, type Objective, type OptimizationMode, type Project, type Settings, type Solver, type UnloadingConstraint } from '../lib/project'
 
 interface Props {
   project: Project
@@ -15,11 +15,13 @@ export function SettingsPanel({ project, solving, onChange, onSolve }: Props) {
   const messages = Array.from(new Set(problems.map((p) => (p.startsWith('bad-dimension') || p.startsWith('bad-copies') ? 'bad' : p)))).map((key) => t(`settings.problems.${key}`))
   const items = totalItemVolume(project) / 1e9
   const bins = totalBinVolume(project) / 1e9
+  const stacked = project.settings.solver === 'boxstacks'
   return (
     <Form layout="vertical" size="small">
       <Form.Item label={t('settings.solver')} help={t('settings.solverHelp')}>
         <Select value={project.settings.solver} onChange={(solver: Solver) => onChange({ solver })} options={[{ value: 'box', label: 'box' }, { value: 'boxstacks', label: 'boxstacks' }]} />
       </Form.Item>
+      {stacked && project.items.some((item) => item.rotations === 'all') ? <Alert type="info" showIcon message={t('items.stackingUpright')} style={{ marginBottom: 12 }} data-testid="upright-note" /> : null}
       <Form.Item label={t('settings.objective')} help={t(`settings.objectiveHelp.${project.settings.objective}`)}>
         <Select value={project.settings.objective} onChange={(objective: Objective) => onChange({ objective })}
           options={(['bin-packing', 'knapsack', 'variable-sized-bin-packing'] as Objective[]).map((o) => ({ value: o, label: t(`settings.objectives.${o}`) }))} />
@@ -33,6 +35,12 @@ export function SettingsPanel({ project, solving, onChange, onSolve }: Props) {
             options={(['anytime', 'not-anytime', 'not-anytime-deterministic', 'not-anytime-sequential'] as OptimizationMode[]).map((m) => ({ value: m, label: t(`settings.modes.${m}`) }))} />
         </Form.Item>
       </Space>
+      <Form.Item label={t('settings.unloading')} help={stacked ? t('settings.unloadingHelp') : t('settings.unloadingBoxOnly')}>
+        <Tooltip title={stacked ? undefined : t('settings.unloadingBoxOnly')}>
+          <Select data-testid="unloading-select" disabled={!stacked} value={project.settings.unloadingConstraint} onChange={(unloadingConstraint: UnloadingConstraint) => onChange({ unloadingConstraint })}
+            options={UNLOADING_CONSTRAINTS.map((c) => ({ value: c, label: t(`settings.unloadingOptions.${c}`) }))} />
+        </Tooltip>
+      </Form.Item>
       <Typography.Paragraph type="secondary">{t('settings.summary', { items: items.toFixed(2), bins: bins.toFixed(2), ratio: bins > 0 ? ((items / bins) * 100).toFixed(0) : '-' })}</Typography.Paragraph>
       {messages.length ? <Alert type="warning" showIcon message={messages.join('；')} style={{ marginBottom: 12 }} /> : null}
       <Button type="primary" size="large" block loading={solving} disabled={problems.length > 0} onClick={onSolve} data-testid="solve-button">

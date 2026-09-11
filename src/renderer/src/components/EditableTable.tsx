@@ -1,8 +1,8 @@
 import { Button, Input, InputNumber, Popconfirm, Select, Space, Table, Tooltip } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
+import { DeleteOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
-import { fromMm, toMm, type BinSpec, type ItemSpec, type Rotations, type Unit } from '../lib/project'
+import { fromMm, SIDES, toMm, type BinSpec, type ItemSpec, type Rotations, type Side, type Unit } from '../lib/project'
 import { colorFor } from '../lib/colors'
 
 type Row = BinSpec | ItemSpec
@@ -12,14 +12,30 @@ interface Props {
   rows: Row[]
   unit: Unit
   kind: 'bins' | 'items'
+  /** Show the boxstacks-only stacking columns (the box solver has no stacking model). */
+  stacking?: boolean
   onChange: (id: string, patch: Patch) => void
   onRemove: (id: string) => void
 }
 
+/** A column title with a small help icon. */
+function Help({ title, help }: { title: string; help: string }) {
+  return (
+    <Space size={4}>
+      {title}
+      <Tooltip title={help}><QuestionCircleOutlined style={{ color: '#999' }} /></Tooltip>
+    </Space>
+  )
+}
+
 /** One editable table for both containers and cargo: dimensions are edited in the project unit and stored in millimetres. */
-export function EditableTable({ rows, unit, kind, onChange, onRemove }: Props) {
+export function EditableTable({ rows, unit, kind, stacking = false, onChange, onRemove }: Props) {
   const { t } = useTranslation()
   type T = Row
+  const number = (row: T, key: keyof Patch, value: number | null | undefined, width: number, opts: { min?: number; integer?: boolean } = {}) => (
+    <InputNumber size="small" min={opts.min ?? 0} value={value ?? undefined} style={{ width }} controls={false} precision={opts.integer ? 0 : undefined}
+      onChange={(v) => onChange(row.id, { [key]: v === null || v === undefined ? null : Number(v) } as Patch)} />
+  )
   const dim = (field: 'x' | 'y' | 'z'): ColumnsType<T>[number] => ({
     title: `${t(`${kind}.${field === 'x' ? 'length' : field === 'y' ? 'width' : 'height'}`)} (${unit})`,
     dataIndex: field,
@@ -42,13 +58,24 @@ export function EditableTable({ rows, unit, kind, onChange, onRemove }: Props) {
   ]
   if (kind === 'bins') {
     columns.push(
-      { title: t('bins.cost'), dataIndex: 'cost', width: 68, render: (_: unknown, row: T) => <InputNumber size="small" min={0} value={(row as BinSpec).cost ?? undefined} style={{ width: 52 }} controls={false} onChange={(v) => onChange(row.id, { cost: v === null ? null : Number(v) })} /> },
-      { title: t('bins.maxWeight'), dataIndex: 'maxWeight', width: 92, render: (_: unknown, row: T) => <InputNumber size="small" min={0} value={(row as BinSpec).maxWeight ?? undefined} style={{ width: 76 }} controls={false} onChange={(v) => onChange(row.id, { maxWeight: v === null ? null : Number(v) })} /> }
+      { title: t('bins.cost'), dataIndex: 'cost', width: 68, render: (_: unknown, row: T) => number(row, 'cost', (row as BinSpec).cost, 52) },
+      { title: t('bins.maxWeight'), dataIndex: 'maxWeight', width: 92, render: (_: unknown, row: T) => number(row, 'maxWeight', (row as BinSpec).maxWeight, 76) },
+      {
+        title: <Help title={t('bins.openSides')} help={t('bins.openSidesHelp')} />, dataIndex: 'openSides', width: 170,
+        render: (_: unknown, row: T) => (
+          <Select size="small" mode="multiple" maxTagCount="responsive" style={{ width: 154 }} value={(row as BinSpec).openSides}
+            onChange={(value: Side[]) => onChange(row.id, { openSides: value })}
+            options={SIDES.map((side) => ({ value: side, label: t(`bins.sides.${side}`) }))} />
+        )
+      }
     )
+    if (stacking) {
+      columns.push({ title: <Help title={t('bins.maxStackDensity')} help={t('bins.maxStackDensityHelp')} />, dataIndex: 'maxStackDensity', width: 118, render: (_: unknown, row: T) => number(row, 'maxStackDensity', (row as BinSpec).maxStackDensity, 90) })
+    }
   } else {
     columns.push(
-      { title: t('items.weight'), dataIndex: 'weight', width: 82, render: (_: unknown, row: T) => <InputNumber size="small" min={0} value={(row as ItemSpec).weight ?? undefined} style={{ width: 66 }} controls={false} onChange={(v) => onChange(row.id, { weight: v === null ? null : Number(v) })} /> },
-      { title: t('items.profit'), dataIndex: 'profit', width: 72, render: (_: unknown, row: T) => <InputNumber size="small" min={0} value={(row as ItemSpec).profit ?? undefined} style={{ width: 56 }} controls={false} onChange={(v) => onChange(row.id, { profit: v === null ? null : Number(v) })} /> },
+      { title: t('items.weight'), dataIndex: 'weight', width: 82, render: (_: unknown, row: T) => number(row, 'weight', (row as ItemSpec).weight, 66) },
+      { title: t('items.profit'), dataIndex: 'profit', width: 72, render: (_: unknown, row: T) => number(row, 'profit', (row as ItemSpec).profit, 56) },
       {
         title: t('items.rotations'), dataIndex: 'rotations', width: 88,
         render: (_: unknown, row: T) => (
@@ -57,6 +84,20 @@ export function EditableTable({ rows, unit, kind, onChange, onRemove }: Props) {
         )
       }
     )
+    if (stacking) {
+      columns.push(
+        { title: <Help title={t('items.maxStack')} help={t('items.stackingHelp.maxStack')} />, dataIndex: 'maxStack', width: 96, render: (_: unknown, row: T) => number(row, 'maxStack', (row as ItemSpec).maxStack, 72, { min: 1, integer: true }) },
+        { title: <Help title={t('items.maxWeightAbove')} help={t('items.stackingHelp.maxWeightAbove')} />, dataIndex: 'maxWeightAbove', width: 112, render: (_: unknown, row: T) => number(row, 'maxWeightAbove', (row as ItemSpec).maxWeightAbove, 84) },
+        { title: <Help title={t('items.nestingHeight')} help={t('items.stackingHelp.nestingHeight')} />, dataIndex: 'nestingHeight', width: 108, render: (_: unknown, row: T) => number(row, 'nestingHeight', (row as ItemSpec).nestingHeight, 80, { integer: true }) },
+        {
+          title: <Help title={t('items.group')} help={t('items.stackingHelp.group')} />, dataIndex: 'group', width: 84,
+          render: (_: unknown, row: T) => (
+            <InputNumber size="small" min={0} precision={0} value={(row as ItemSpec).group ?? 0} style={{ width: 60 }} controls={false}
+              onChange={(v) => onChange(row.id, { group: Math.max(0, Math.round(Number(v ?? 0))) })} />
+          )
+        }
+      )
+    }
   }
   columns.push({
     title: '', dataIndex: 'actions', width: 40,

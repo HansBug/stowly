@@ -82,7 +82,7 @@ describe('App', () => {
     stowly.openFiles.mockResolvedValueOnce([{ name: 'bad.json', path: '/bad.json', data: encode('not json') }])
     fireEvent.click(button('打开项目'))
     await waitFor(() => expect(messageText()).toMatch(/JSON|SyntaxError/))
-    const opened = { ...emptyProject('opened'), bins: [{ id: 'b1', name: 'crate', x: 1000, y: 800, z: 600, copies: 2 }] }
+    const opened = { ...emptyProject('opened'), bins: [{ id: 'b1', name: 'crate', x: 1000, y: 800, z: 600, copies: 2, openSides: ['x-max' as const] }] }
     stowly.openFiles.mockResolvedValueOnce([{ name: 'p.json', path: '/p.json', data: encode(serializeProject(opened)) }])
     fireEvent.click(button('打开项目'))
     await screen.findByDisplayValue('opened')

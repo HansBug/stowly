@@ -15,6 +15,8 @@ def test_presets_are_well_formed():
             assert entry['category'] and entry['name']['zh'] and entry['name']['en']
             assert entry['x'] > 0 and entry['y'] > 0 and entry['z'] > 0
             assert entry.get('source'), 'every preset cites its source: %s' % entry['id']
+            if kind == 'containers':
+                assert entry['openSides'] and set(entry['openSides']) <= {'x-min', 'x-max', 'y-min', 'y-max', 'top'}, entry['id']
             if 'maxWeight' in entry and entry['maxWeight'] is not None:
                 assert entry['maxWeight'] > 0
 

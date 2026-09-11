@@ -18,7 +18,7 @@ export function solvedDemo(): { project: Project; result: SolveResult } {
     volumeUtilization: 0.42, weight: 22
   }
   const result: SolveResult = {
-    status: 'feasible', objective: 'knapsack', value: 74521635000, bound: 76351413000, solveTime: 10.02, wallTime: 10.3,
+    status: 'feasible', solver: 'box', objective: 'knapsack', value: 74521635000, bound: 76351413000, solveTime: 10.02, wallTime: 10.3,
     bins: [bin],
     counts: project.items.map((item, index) => ({ itemId: item.id, packed: index < 2 ? item.copies : item.copies - 1, total: item.copies })),
     statistics: {}, options: {}

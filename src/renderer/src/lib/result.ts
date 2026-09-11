@@ -32,6 +32,8 @@ export interface ItemCount {
 
 export interface SolveResult {
   status: 'optimal' | 'feasible' | 'no-solution' | 'infeasible' | string
+  /** Solver that produced the result; the viewer's order label and floating check follow it, not the current setting. */
+  solver: 'box' | 'boxstacks'
   objective: string
   value: number | null
   bound: number | null
@@ -70,4 +72,14 @@ export function overallUtilization(result: SolveResult): number {
 
 export function itemName(project: Project, itemId: string): string {
   return project.items.find((item) => item.id === itemId)?.name ?? itemId
+}
+
+/**
+ * Placements above the floor with nothing directly underneath. The box solver has no support constraint (upstream places
+ * items by aligning with faces of the skyline, not by resting them on something), so its solutions can contain these;
+ * boxstacks builds stacks and never does.
+ */
+export function floatingPlacements(bin: PackedBin): Placement[] {
+  const overlaps = (a: Placement, b: Placement) => a.x < b.x + b.lx && b.x < a.x + a.lx && a.y < b.y + b.ly && b.y < a.y + a.ly
+  return bin.placements.filter((p) => p.z > 0 && !bin.placements.some((q) => q !== p && q.z + q.lz === p.z && overlaps(p, q)))
 }

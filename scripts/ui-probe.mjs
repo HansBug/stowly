@@ -43,6 +43,7 @@ const step = async (name, fn) => {
     for (let i = 0; i < 2; i++) await page.keyboard.press('Escape')  // close whatever overlay the failure left open
   }
 }
+const tab = (text) => page.locator('.ant-tabs-tab').filter({ hasText: text }).first()
 const overflow = async (label) => {
   const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ch: document.documentElement.clientHeight }))
   if (o.sw > o.cw || o.sh > o.ch) problems.push(`[layout] ${label}: page overflows (${o.sw}x${o.sh} in ${o.cw}x${o.ch})`)
@@ -95,6 +96,10 @@ await step('settings + solve', async () => {
   const text = await page.locator('body').innerText()
   const m = text.match(/(已证明最优|可行解（未证明最优）|没有找到解|不可行|求解失败)/)
   console.log('     result status text:', m ? m[1] : '(none found)')
+  const order = await page.getByTestId('order-label').innerText().catch(() => '')
+  if (!order.includes('求解器输出顺序')) problems.push(`[ui] box order label should say 求解器输出顺序, got ${JSON.stringify(order)}`)
+  const floating = await page.getByTestId('floating-tag').innerText().catch(() => '(no floating tag)')
+  console.log('     order label:', order, '| floating:', floating)
 })
 
 await step('export csv', async () => {
@@ -103,6 +108,36 @@ await step('export csv', async () => {
   const csv = path.join(outDir, 'demo.csv')
   if (!fs.existsSync(csv)) problems.push('[ui] export did not write demo.csv')
   else console.log('     export csv lines:', fs.readFileSync(csv, 'utf-8').trim().split('\n').length)
+})
+
+await step('boxstacks shows the stacking columns and the unloading constraint', async () => {
+  await tab('求解设置').click()
+  await page.locator('.ant-layout-sider .ant-select').filter({ visible: true }).first().click()
+  await page.locator('.ant-select-item-option[title="boxstacks"]').click()
+  await page.waitForTimeout(400)
+  await shot('settings-boxstacks')
+  const disabled = await page.getByTestId('unloading-select').evaluate((el) => el.classList.contains('ant-select-disabled'))
+  if (disabled) problems.push('[ui] unloading constraint stays disabled under boxstacks')
+  await tab('货物').click()
+  await page.waitForTimeout(400)
+  await shot('items-boxstacks')
+  const text = await page.locator('.ant-layout-sider').innerText()
+  for (const label of ['最多叠放', '上方承重', '嵌入深度', '卸货组']) if (!text.includes(label)) problems.push(`[ui] stacking column ${label} missing under boxstacks`)
+  await tab('容器').click()
+  await page.waitForTimeout(300)
+  await shot('bins-boxstacks')
+  await tab('求解设置').click()
+  await page.locator('.ant-layout-sider .ant-select').filter({ visible: true }).first().click()
+  await page.locator('.ant-select-item-option[title="box"]').click()
+  await page.waitForTimeout(300)
+  await tab('货物').click()
+  await page.waitForTimeout(500)
+  const back = await page.locator('.ant-table-thead').filter({ visible: true }).first().innerText()
+  const paneClasses = await page.evaluate(() => [...new Set([...document.querySelectorAll('[class*="ant-tabs-"]')].map((e) => e.className.split(' ').find((c) => /pane|panel/.test(c))).filter(Boolean))])
+  console.log('     tab pane classes:', paneClasses.join(' '))
+  if (back.includes('最多叠放')) problems.push('[ui] stacking columns still shown under box')
+  const note = await page.getByTestId('stacking-note').innerText().catch(() => '')
+  if (!note.includes('只有 boxstacks')) problems.push('[ui] the box-mode note about stacking columns is missing')
 })
 
 await step('viewer hover/click', async () => {

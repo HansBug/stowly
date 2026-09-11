@@ -1,4 +1,4 @@
-import type { Project } from './project'
+import type { Project, Side } from './project'
 import type { SolveResult } from './result'
 
 export interface BackendInfo {
@@ -29,6 +29,7 @@ export interface PresetEntry {
   weight?: number | null
   note?: { zh: string; en: string }
   source: string
+  openSides?: Side[]
 }
 
 export class BackendClient {

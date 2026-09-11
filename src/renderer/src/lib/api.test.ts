@@ -40,7 +40,7 @@ describe('BackendClient', () => {
     expect(finished.status).toBe('done')
     expect(ticks).toEqual(['running', 'running', 'done'])
     await client.forget('j1')
-    expect(await client.exportPlacements(demoProject(), { status: 'optimal', objective: 'bin-packing', value: 1, bound: 1, solveTime: 0, wallTime: 0, bins: [], counts: [], statistics: {}, options: {} })).toBe('bin,item\n')
+    expect(await client.exportPlacements(demoProject(), { status: 'optimal', solver: 'box', objective: 'bin-packing', value: 1, bound: 1, solveTime: 0, wallTime: 0, bins: [], counts: [], statistics: {}, options: {} })).toBe('bin,item\n')
   })
   it('uploads files as multipart', async () => {
     const fetch = fakeFetch({ 'POST /api/import': () => ({ body: demoProject() }) })

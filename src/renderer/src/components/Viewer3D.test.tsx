@@ -35,8 +35,28 @@ describe('Viewer3D', () => {
     const { project } = solvedDemo()
     rerender(<Viewer3D project={project} result={null} selectedBin={0} onSelectBin={vi.fn()} />)
     const scene = fake.scenes.at(-1)!
-    expect(scene.setBin).toHaveBeenLastCalledWith(expect.objectContaining({ x: 12032, placements: [] }), expect.any(Object))
-    expect(screen.queryByText('装载顺序')).not.toBeInTheDocument()
+    expect(scene.setBin).toHaveBeenLastCalledWith(expect.objectContaining({ x: 12032, placements: [] }), expect.any(Object), ['x-max'], new Set())
+    expect(screen.queryByTestId('order-label')).not.toBeInTheDocument()
+    expect(screen.getByText(/开口: 尾端·门/)).toBeInTheDocument()
+  })
+
+  it('names the order honestly per solver and flags floating items', () => {
+    const { project, result } = solvedDemo()
+    // box: the order is the search order; one placement hangs in the air
+    const withFloating = { ...result, bins: [{ ...result.bins[0], placements: [...result.bins[0].placements, { itemId: project.items[0].id, itemIndex: 0, x: 3000, y: 0, z: 500, lx: 530, ly: 290, lz: 370, rotation: 'XYZ' }] }] }
+    const { rerender } = render(<Viewer3D project={project} result={withFloating} selectedBin={0} onSelectBin={vi.fn()} />)
+    expect(screen.getByTestId('order-label').textContent).toContain('求解器输出顺序')
+    expect(screen.getByTestId('floating-tag').textContent).toContain('悬空 1 件')
+    expect(fake.scenes.at(-1)!.setBin).toHaveBeenLastCalledWith(expect.any(Object), expect.any(Object), ['x-max'], new Set([3]))
+    expect(screen.getByText(/重力向下/)).toBeInTheDocument()
+    // boxstacks: stack by stack from the floor, no floating tag for supported items
+    // the label follows the solver that produced the result, not the current setting
+    const stacked = { ...project, settings: { ...project.settings, solver: 'boxstacks' as const } }
+    rerender(<Viewer3D project={stacked} result={withFloating} selectedBin={0} onSelectBin={vi.fn()} />)
+    expect(screen.getByTestId('order-label').textContent).toContain('求解器输出顺序')
+    rerender(<Viewer3D project={stacked} result={{ ...result, solver: 'boxstacks' }} selectedBin={0} onSelectBin={vi.fn()} />)
+    expect(screen.getByTestId('order-label').textContent).toContain('装载顺序')
+    expect(screen.queryByTestId('floating-tag')).not.toBeInTheDocument()
   })
 
   it('drives the scene from the result, the slider and the pointer callbacks', () => {
@@ -45,7 +65,7 @@ describe('Viewer3D', () => {
     const onSelectBin = vi.fn()
     render(<Viewer3D project={project} result={two} selectedBin={0} onSelectBin={onSelectBin} />)
     const scene = fake.scenes.at(-1)!
-    expect(scene.setBin).toHaveBeenCalledWith(two.bins[0], expect.any(Object))
+    expect(scene.setBin).toHaveBeenCalledWith(two.bins[0], expect.any(Object), ['x-max'], new Set())
     expect(screen.getByText('利用率 42.0%')).toBeInTheDocument()
     expect(screen.getByText('3/3')).toBeInTheDocument()
     fireEvent.click(screen.getByText('容器 2 ×2'))

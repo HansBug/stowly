@@ -46,8 +46,15 @@ describe('SceneController', () => {
     current = scene
     expect(container.querySelector('canvas')).not.toBeNull()
     expect(scene.camera.aspect).toBeCloseTo(400 / 300)
-    scene.setBin(bin, { big: '#ff0000' })
+    scene.setBin(bin, { big: '#ff0000' }, ['x-max', 'top'], new Set([1]))
     expect(scene.scene.children.length).toBeGreaterThan(2)
+    const flags = { floor: 0, grid: 0, gravity: 0, floating: 0 }
+    scene.scene.traverse((node) => { for (const key of Object.keys(flags) as Array<keyof typeof flags>) if (node.userData[key]) flags[key]++ })
+    expect(flags).toEqual({ floor: 1, grid: 1, gravity: 1, floating: 1 })
+    const walls: Array<{ side: string; open: boolean }> = []
+    scene.scene.traverse((node) => { if (node.userData.side) walls.push({ side: node.userData.side, open: node.userData.open }) })
+    expect(walls).toHaveLength(5)
+    expect(walls.filter((w) => w.open).map((w) => w.side).sort()).toEqual(['top', 'x-max'])
     const meshes = (scene as unknown as { meshes: THREE.Mesh[] }).meshes
     expect(meshes).toHaveLength(2)
     expect(scene.controls.target.toArray()).toEqual([0.5, 0.5, 0.5])
