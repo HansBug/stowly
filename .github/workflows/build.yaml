@@ -103,8 +103,8 @@ jobs:
             echo "portable binary: $app"
             cd /tmp
             head -1 "$app" | grep -q "^#!/bin/sh" || { echo "$app is not the launcher script"; exit 1; }
-            # No --no-sandbox here on purpose: Docker's default seccomp profile blocks user namespaces, so this is a host where
-            # Chromium's sandbox cannot start and the launcher (build/linux-launcher.sh) must add the flag itself and say so.
+            # No --no-sandbox here on purpose: the default seccomp profile of Docker blocks user namespaces, so this is a host
+            # where the Chromium sandbox cannot start and the launcher (build/linux-launcher.sh) must add the flag and say so.
             status=0
             # xvfb-run merges the stderr of the command into its stdout, so capture both to find the notice of the launcher.
             xvfb-run -a "$app" --disable-gpu --disable-dev-shm-usage --smoke=/dist/smoke-$TARGET-portable-targz-ubuntu2204.json > /tmp/launcher.log 2>&1 || status=$?
