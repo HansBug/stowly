@@ -113,6 +113,30 @@ jobs:
             exit $status
           '
 
+      - name: Sandbox fallback of the launcher on a host that restricts unprivileged user namespaces
+        if: runner.os == 'Linux'
+        # The extracted tar.gz on a real host (not a container), with Ubuntu 24.04's AppArmor restriction switched on:
+        # `stowly` (build/linux-launcher.sh) must detect it, print its notice and run the app with --no-sandbox itself.
+        # This exact failure ("SUID sandbox helper binary was found, but is not configured correctly") is what a user
+        # sees when running the downloaded portable on Ubuntu 24.04 without the launcher.
+        run: |
+          set -euo pipefail
+          if [ ! -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            echo "::warning::this kernel has no apparmor_restrict_unprivileged_userns; the launcher's fallback path was not exercised"
+            exit 0
+          fi
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=1
+          mkdir -p /tmp/portable-host && tar -xzf dist/*-portable.tar.gz -C /tmp/portable-host
+          app=$(find /tmp/portable-host -maxdepth 2 -type f -name stowly | head -1)
+          head -1 "$app" | grep -q '^#!/bin/sh' || { echo "$app is not the launcher script"; exit 1; }
+          report=$PWD/dist/smoke-${{ matrix.target }}-portable-targz-host-userns-restricted.json
+          status=0
+          xvfb-run -a "$app" --disable-gpu --smoke="$report" 2> /tmp/launcher.stderr || status=$?
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          cat "$report" || true
+          grep -q 'running with --no-sandbox' /tmp/launcher.stderr || { echo "the launcher did not report its fallback:"; cat /tmp/launcher.stderr; exit 1; }
+          exit $status
+
       # --- Windows arm64: electron-builder's NSIS installers do not work on Windows on ARM (see build/stowly-win-arm64.iss);
       #     the installer is built with Inno Setup from the unpacked directory instead ---
       - name: Build the arm64 installer with Inno Setup

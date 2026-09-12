@@ -14,6 +14,8 @@ extraResources:
     filter: ["**/*", "!**/__pycache__/**"]
 asar: true
 npmRebuild: false
+# Linux only: renames the executable to stowly-bin and installs build/linux-launcher.sh in its place (sandbox fallback).
+afterPack: scripts/after-pack.cjs
 toolsets:
   # Static AppImage runtime: the legacy runtime for arm64 links an unversioned libz.so and fails to start on stock
   # distributions ("error while loading shared libraries: libz.so"); verified in bare ubuntu:22.04 containers for both archs.
