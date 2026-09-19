@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stowly-backend"
-version = "0.1.1"
+version = "0.1.2"
 description = "Local HTTP backend of Stowly: presets, importers and packingsolver3d solves."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
-    "packingsolver3d>=0.0.2",
+    "packingsolver3d>=0.0.3",
     "fastapi>=0.110",
     "uvicorn>=0.29",
     "pydantic>=2.5",

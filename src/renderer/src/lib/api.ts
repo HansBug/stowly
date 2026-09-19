@@ -6,11 +6,41 @@ export interface BackendInfo {
   token: string
 }
 
+/** The stopping policy a solve runs with: the recommendation (source 'auto') or the manual values with the prediction alongside. */
+export interface Budget {
+  source: 'auto' | 'manual'
+  timeLimit: number
+  stopWhenUnimprovedFor?: number | null
+  stopWhenUnimprovedAfter?: number | null
+  path: string
+  latency: number
+  improvement: number
+  alpha: number
+  speed: number
+}
+
+export interface ProgressEvent {
+  time: number
+  items: number
+  bins: number
+  profit: number
+  cost: number
+  label: string
+}
+
+export interface Progress {
+  startedAt: number
+  elapsed: number
+  events: ProgressEvent[]
+}
+
 export interface JobState {
   id: string
   status: 'running' | 'done' | 'failed'
   result?: SolveResult | null
   error?: string | null
+  budget?: Budget | null
+  progress?: Progress | null
 }
 
 export interface Presets {
@@ -62,6 +92,12 @@ export class BackendClient {
 
   async presets(): Promise<Presets> {
     return (await this.check(await this.fetchImpl(`${this.info.baseUrl}/api/presets`, { headers: this.headers() }))).json()
+  }
+
+  /** The budget a solve of this project would run with; 422 when the project has no container or no item. */
+  async recommend(project: Project): Promise<Budget> {
+    const response = await this.fetchImpl(`${this.info.baseUrl}/api/recommend`, { method: 'POST', headers: this.headers({ 'Content-Type': 'application/json' }), body: JSON.stringify(project) })
+    return (await this.check(response)).json()
   }
 
   async solve(project: Project): Promise<JobState> {

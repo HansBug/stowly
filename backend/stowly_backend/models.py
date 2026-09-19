@@ -47,12 +47,28 @@ class ItemSpec(BaseModel):
     group: int = Field(default=0, ge=0)                           # unloading group: 0 is unloaded first
 
 
+TimeMode = Literal['auto', 'manual']
+
+
 class Settings(BaseModel):
-    solver: Solver = 'box'
+    """Solver settings. The time budget has two modes: ``auto`` asks packingsolver3d's ``recommend_time_budget`` for the
+    time limit and the stall-stop knobs at solve time (``alpha`` and ``speed`` are its two dials), ``manual`` uses the
+    three values stored here, which the interface pre-fills with the recommendation."""
+
+    solver: Solver = 'boxstacks'
     objective: Objective = 'bin-packing'
-    timeLimit: float = Field(default=10.0, gt=0)
     optimizationMode: OptimizationMode = 'anytime'
     unloadingConstraint: UnloadingConstraint = 'none'  # boxstacks only
+    timeMode: TimeMode = 'auto'
+    # quality-versus-waiting dial of the recommendation; None = packingsolver3d's per-solver default (box 4, boxstacks 8)
+    alpha: Optional[float] = Field(default=None, gt=0)
+    # machine speed relative to the estimator's reference machine; the interface fills it from its calibration store
+    # before each request, so it is a per-machine value that happens to travel inside the settings
+    speed: float = Field(default=1.0, gt=0)
+    # manual mode only
+    timeLimit: float = Field(default=30.0, gt=0)
+    stopWhenUnimprovedFor: Optional[float] = Field(default=None, gt=0)
+    stopWhenUnimprovedAfter: Optional[float] = Field(default=None, ge=0)
 
 
 class Project(BaseModel):
@@ -108,6 +124,39 @@ class SolveResult(BaseModel):
     counts: List[ItemCount]
     statistics: Dict[str, Any]
     options: Dict[str, Any]
+    stopReason: Optional[str] = None  # None (time limit / proof), 'unimproved' (stall stop) or 'callback'
+    firstSolutionTime: Optional[float] = None  # seconds to the first reported solution, for machine-speed calibration
+
+
+class Budget(BaseModel):
+    """The stopping policy a solve runs with: packingsolver3d's recommendation or the manual values, in seconds."""
+
+    source: TimeMode
+    timeLimit: float
+    stopWhenUnimprovedFor: Optional[float] = None
+    stopWhenUnimprovedAfter: Optional[float] = None
+    path: str  # upstream algorithm path the estimator predicted (TSMS / TS / SSK / SVC / SOR)
+    latency: float  # predicted seconds to the first solution
+    improvement: float  # predicted seconds worth waiting after it
+    alpha: float
+    speed: float
+
+
+class ProgressEvent(BaseModel):
+    time: float
+    items: int
+    bins: int
+    profit: float
+    cost: float
+    label: str
+
+
+class Progress(BaseModel):
+    """Live view of a running solve, updated from packingsolver3d's progress callback."""
+
+    startedAt: float  # time.time() when the solve started
+    elapsed: float = 0.0
+    events: List[ProgressEvent] = []
 
 
 class JobState(BaseModel):
@@ -115,3 +164,5 @@ class JobState(BaseModel):
     status: Literal['running', 'done', 'failed']
     result: Optional[SolveResult] = None
     error: Optional[str] = None
+    budget: Optional[Budget] = None
+    progress: Optional[Progress] = None

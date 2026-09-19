@@ -25,7 +25,7 @@ export const SMOKE_PROJECT = {
     { id: 'a', name: 'A', x: 20, y: 30, z: 40, copies: 6, weight: null, profit: null, rotations: 'all' },
     { id: 'b', name: 'B', x: 15, y: 15, z: 15, copies: 4, weight: 1.5, profit: null, rotations: 'fixed' }
   ],
-  settings: { solver: 'box', objective: 'bin-packing', timeLimit: 2, optimizationMode: 'not-anytime-deterministic' }
+  settings: { solver: 'box', objective: 'bin-packing', timeMode: 'manual', timeLimit: 2, optimizationMode: 'not-anytime-deterministic' }
 }
 
 export interface SmokeOptions {

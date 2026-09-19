@@ -1,12 +1,14 @@
 """Turn a project into a packingsolver3d instance, solve it in a worker thread and hand back plain values."""
 import threading
+import time
 import uuid
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 
-from packingsolver3d import ALL_ROTATIONS, BinType, Instance, ItemType, Objective, OptimizationMode, Rotation, UnloadingConstraint, box, boxstacks
+from packingsolver3d import ALL_ROTATIONS, BinType, Instance, ItemType, Objective, OptimizationMode, Rotation, UnloadingConstraint, box, boxstacks, \
+    recommend_time_budget
 from packingsolver3d.errors import PackingSolverError
 
-from .models import ItemCount, JobState, PackedBin, Placement, Project, SolveResult
+from .models import Budget, ItemCount, JobState, PackedBin, Placement, Progress, ProgressEvent, Project, SolveResult
 
 ROTATIONS = {
     'all': list(ALL_ROTATIONS),
@@ -62,11 +64,42 @@ def build_instance(project: Project) -> Instance:
     return Instance(bin_types=bins, item_types=items, objective=OBJECTIVES[project.settings.objective], unloading_constraint=unloading)
 
 
-def solve_project(project: Project) -> SolveResult:
-    """Run the configured solver and translate the result into project ids and per-bin summaries."""
+def budget_for(project: Project, instance: Optional[Instance] = None) -> Budget:
+    """The stopping policy of a solve: ``auto`` takes packingsolver3d's recommendation for this instance, ``manual`` the stored values.
+
+    Even in manual mode the recommendation is computed, so the interface can show the predicted algorithm path and first
+    solution next to the user's numbers.
+    """
+    settings = project.settings
+    recommended = recommend_time_budget(instance or build_instance(project), settings.solver, alpha=settings.alpha, speed=settings.speed)
+    if settings.timeMode == 'auto':
+        return Budget(source='auto', timeLimit=recommended.time_limit, stopWhenUnimprovedFor=recommended.stop_when_unimproved_for,
+                      stopWhenUnimprovedAfter=recommended.stop_when_unimproved_after, path=recommended.path, latency=recommended.latency,
+                      improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
+    return Budget(source='manual', timeLimit=settings.timeLimit, stopWhenUnimprovedFor=settings.stopWhenUnimprovedFor,
+                  stopWhenUnimprovedAfter=settings.stopWhenUnimprovedAfter, path=recommended.path, latency=recommended.latency,
+                  improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
+
+
+def solve_project(project: Project, budget: Optional[Budget] = None, on_event: Optional[Callable[[ProgressEvent], None]] = None) -> SolveResult:
+    """Run the configured solver under ``budget`` (default: :func:`budget_for`) and translate the result into project ids and per-bin summaries."""
     instance = build_instance(project)
+    budget = budget or budget_for(project, instance)
     engine = boxstacks if project.settings.solver == 'boxstacks' else box
-    result = engine.solve(instance, time_limit=project.settings.timeLimit, optimization_mode=MODES[project.settings.optimizationMode])
+    first_solution: List[float] = []
+
+    def forward(event) -> None:
+        if not first_solution:
+            first_solution.append(event.time)
+        if on_event is not None:
+            on_event(ProgressEvent(time=event.time, items=event.number_of_items, bins=event.number_of_bins, profit=event.profit, cost=event.cost, label=event.label))
+
+    options = dict(time_limit=budget.timeLimit, optimization_mode=MODES[project.settings.optimizationMode], progress_callback=forward)
+    if budget.stopWhenUnimprovedFor is not None:
+        options['stop_when_unimproved_for'] = budget.stopWhenUnimprovedFor
+        if budget.stopWhenUnimprovedAfter is not None:
+            options['stop_when_unimproved_after'] = budget.stopWhenUnimprovedAfter
+    result = engine.solve(instance, **options)
     packed_bins: List[PackedBin] = []
     counts = {item.id: 0 for item in project.items}
     for packed in result.bins:
@@ -88,6 +121,7 @@ def solve_project(project: Project) -> SolveResult:
         solveTime=result.solve_time, wallTime=result.run.wall_time if result.run else 0.0, bins=packed_bins,
         counts=[ItemCount(itemId=item.id, packed=counts[item.id], total=item.copies) for item in project.items],
         statistics=dict(result.statistics), options=dict(result.run.options) if result.run else {},
+        stopReason=result.run.stop_reason if result.run else None, firstSolutionTime=first_solution[0] if first_solution else None,
     )
 
 
@@ -99,15 +133,24 @@ class JobManager:
         self._lock = threading.Lock()
 
     def start(self, project: Project) -> JobState:
-        job = JobState(id=uuid.uuid4().hex, status='running')
+        budget = budget_for(project)
+        job = JobState(id=uuid.uuid4().hex, status='running', budget=budget, progress=Progress(startedAt=time.time()))
         with self._lock:
             self._jobs[job.id] = job
-        threading.Thread(target=self._run, args=(job.id, project), daemon=True).start()
+        threading.Thread(target=self._run, args=(job.id, project, budget), daemon=True).start()
         return job
 
-    def _run(self, job_id: str, project: Project) -> None:
+    def _run(self, job_id: str, project: Project, budget: Budget) -> None:
+        def on_event(event: ProgressEvent) -> None:
+            with self._lock:
+                state = self._jobs.get(job_id)
+                if state is None or state.progress is None:
+                    return
+                progress = state.progress.model_copy(update=dict(events=state.progress.events + [event]))
+                self._jobs[job_id] = state.model_copy(update=dict(progress=progress))
+
         try:
-            result = solve_project(project)
+            result = solve_project(project, budget, on_event)
             update = dict(status='done', result=result)
         except (PackingSolverError, ValueError) as err:
             update = dict(status='failed', error=str(err))
@@ -117,8 +160,12 @@ class JobManager:
             self._jobs[job_id] = self._jobs[job_id].model_copy(update=update)
 
     def get(self, job_id: str):
+        """The job as seen now; a running job's ``progress.elapsed`` is refreshed from the clock."""
         with self._lock:
-            return self._jobs.get(job_id)
+            state = self._jobs.get(job_id)
+            if state is not None and state.status == 'running' and state.progress is not None:
+                state = state.model_copy(update=dict(progress=state.progress.model_copy(update=dict(elapsed=time.time() - state.progress.startedAt))))
+            return state
 
     def forget(self, job_id: str) -> bool:
         with self._lock:

@@ -28,7 +28,7 @@ def test_solve_bin_packing(project):
 
 def test_solve_knapsack_leaves_items_out(project):
     from stowly_backend.models import BinSpec
-    project = project.model_copy(update={'settings': Settings(objective='knapsack', timeLimit=2.0, optimizationMode='not-anytime-deterministic'),
+    project = project.model_copy(update={'settings': Settings(solver='box', objective='knapsack', timeMode='manual', timeLimit=2.0, optimizationMode='not-anytime-deterministic'),
                                          'bins': [BinSpec(id='bin', x=100, y=100, z=100, copies=1)],
                                          'items': [ItemSpec(id='big', name='big', x=90, y=90, z=90, copies=3, profit=5.0)]})
     result = solve_project(project)
@@ -77,7 +77,7 @@ def test_job_manager_reports_solver_errors():
 
 def test_job_manager_marks_solver_exceptions_as_failed(project, monkeypatch):
     import stowly_backend.solver as solver_module
-    monkeypatch.setattr(solver_module, 'solve_project', lambda _project: (_ for _ in ()).throw(ValueError('refused by the solver')))
+    monkeypatch.setattr(solver_module, 'solve_project', lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError('refused by the solver')))
     manager = JobManager()
     job = manager.start(project)
     for _ in range(200):
@@ -113,3 +113,102 @@ def test_boxstacks_keeps_items_upright_and_forwards_stacking_fields(project):
     assert plain.item_types[0].stackability_id is None and plain.item_types[0].maximum_stackability is None
     assert plain.bin_types[0].maximum_stack_density is None
     assert len(plain.item_types[0].rotations) == 6
+
+
+def test_settings_defaults_are_boxstacks_and_automatic_time():
+    settings = Settings()
+    assert settings.solver == 'boxstacks' and settings.timeMode == 'auto' and settings.alpha is None and settings.speed == 1.0
+    assert settings.stopWhenUnimprovedFor is None and settings.stopWhenUnimprovedAfter is None
+
+
+def test_budget_for_auto_takes_the_recommendation(project):
+    from stowly_backend.solver import budget_for
+    auto = project.model_copy(update={'settings': project.settings.model_copy(update={'timeMode': 'auto'})})
+    budget = budget_for(auto)
+    assert budget.source == 'auto' and budget.path in ('TSMS', 'TS', 'SSK', 'SVC') and budget.alpha == 4.0 and budget.speed == 1.0
+    assert budget.timeLimit >= 1.0 and budget.stopWhenUnimprovedFor >= 2.0 and 0 <= budget.stopWhenUnimprovedAfter <= budget.timeLimit
+    assert budget.latency > 0 and budget.improvement >= 0
+    quality = budget_for(auto.model_copy(update={'settings': auto.settings.model_copy(update={'alpha': 8.0, 'speed': 2.0})}))
+    assert quality.alpha == 8.0 and quality.speed == 2.0 and quality.latency == pytest.approx(budget.latency / 2)
+
+
+def test_budget_for_manual_keeps_the_settings_and_still_predicts(project):
+    from stowly_backend.solver import budget_for
+    manual = project.model_copy(update={'settings': project.settings.model_copy(update={'stopWhenUnimprovedFor': 3.0, 'stopWhenUnimprovedAfter': 1.0})})
+    budget = budget_for(manual)
+    assert budget.source == 'manual' and budget.timeLimit == 2.0 and budget.stopWhenUnimprovedFor == 3.0 and budget.stopWhenUnimprovedAfter == 1.0
+    assert budget.path and budget.latency > 0
+    plain = budget_for(project)
+    assert plain.stopWhenUnimprovedFor is None and plain.stopWhenUnimprovedAfter is None
+
+
+def test_solve_project_reports_events_stop_reason_and_first_solution(container_project):
+    # Progress events come from the anytime algorithms while they improve; a run that ends instantly may report none.
+    events = []
+    result = solve_project(container_project, on_event=events.append)
+    assert result.stopReason is None  # manual budget without stall stop: the run ends on the time limit
+    assert result.firstSolutionTime is not None and result.firstSolutionTime >= 0
+    assert events and events[0].items > 0 and events[0].time == result.firstSolutionTime
+    assert all(e.label for e in events)
+
+
+def test_solve_project_passes_the_stall_stop_knobs(project, monkeypatch):
+    import stowly_backend.solver as solver_module
+    from stowly_backend.models import Budget
+    seen = {}
+    real_solve = solver_module.box.solve
+
+    def fake_solve(instance, **options):
+        seen.update(options)
+        return real_solve(instance, time_limit=1.0, optimization_mode=options['optimization_mode'])
+
+    monkeypatch.setattr(solver_module.box, 'solve', fake_solve)
+    budget = Budget(source='manual', timeLimit=5.0, stopWhenUnimprovedFor=2.0, stopWhenUnimprovedAfter=1.0, path='TS', latency=0.2, improvement=1.0, alpha=4.0, speed=1.0)
+    solve_project(project, budget)
+    assert seen['time_limit'] == 5.0 and seen['stop_when_unimproved_for'] == 2.0 and seen['stop_when_unimproved_after'] == 1.0
+    seen.clear()
+    solve_project(project, budget.model_copy(update={'stopWhenUnimprovedFor': 2.0, 'stopWhenUnimprovedAfter': None}))
+    assert seen['stop_when_unimproved_for'] == 2.0 and 'stop_when_unimproved_after' not in seen
+
+
+def test_job_manager_exposes_budget_and_progress(container_project):
+    manager = JobManager()
+    job = manager.start(container_project)
+    assert job.budget is not None and job.budget.source == 'manual' and job.progress is not None and job.progress.events == []
+    for _ in range(200):
+        state = manager.get(job.id)
+        if state.status != 'running':
+            break
+        assert state.progress.elapsed >= 0
+        time.sleep(0.02)
+    assert state.status == 'done'
+    assert state.progress.events and state.progress.events[0].items > 0
+    assert state.result.firstSolutionTime == state.progress.events[0].time
+
+
+def test_solve_project_tolerates_a_run_without_events(project, monkeypatch):
+    # A run that reports no progress event (a fast path, or a mode that replays silently) yields no first-solution time and no crash.
+    import stowly_backend.solver as solver_module
+    real_solve = solver_module.box.solve
+
+    def silent_solve(instance, **options):
+        options.pop('progress_callback')
+        return real_solve(instance, **options)
+
+    monkeypatch.setattr(solver_module.box, 'solve', silent_solve)
+    events = []
+    result = solve_project(project, on_event=events.append)
+    assert result.status == 'optimal' and events == [] and result.firstSolutionTime is None
+
+
+def test_job_manager_ignores_events_of_forgotten_jobs(project):
+    manager = JobManager()
+    job = manager.start(project)
+    manager.forget(job.id)
+    time.sleep(0.5)  # the worker thread finishes and must not resurrect the forgotten job
+    assert manager.get(job.id) is None
+
+
+def test_solve_project_records_the_first_solution_without_a_listener(container_project):
+    result = solve_project(container_project)
+    assert result.firstSolutionTime is not None and result.firstSolutionTime > 0

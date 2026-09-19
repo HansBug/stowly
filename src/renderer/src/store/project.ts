@@ -1,9 +1,19 @@
 import { create } from 'zustand'
-import type { BackendClient, JobState, Presets } from '../lib/api'
+import type { BackendClient, Budget, JobState, Presets } from '../lib/api'
 import { demoProject, emptyProject, newId, type BinSpec, type ItemSpec, type Project, type Settings, type Unit } from '../lib/project'
 import type { SolveResult } from '../lib/result'
 
 export type Language = 'zh-CN' | 'en-US'
+
+/** Machine speed relative to packingsolver3d's reference machine, learnt from the first-solution time of every solve. */
+export interface Calibration {
+  speed: number
+  samples: number
+}
+
+export const CALIBRATION_KEY = 'stowly.calibration'
+const CALIBRATION_WEIGHT = 0.3
+const SPEED_BOUNDS: [number, number] = [0.2, 5]
 
 export interface StowlyState {
   project: Project
@@ -15,6 +25,11 @@ export interface StowlyState {
   language: Language
   selectedBin: number
   dirty: boolean
+  /** The budget the backend would solve the current project with; refreshed when the project changes. */
+  recommendation: Budget | null
+  calibration: Calibration
+  refreshRecommendation: (client: BackendClient) => Promise<void>
+  resetCalibration: () => void
   setLanguage: (language: Language) => void
   setProject: (project: Project) => void
   newProject: () => void
@@ -34,6 +49,37 @@ export interface StowlyState {
   setSelectedBin: (index: number) => void
   setError: (error: string | null) => void
   solve: (client: BackendClient) => Promise<void>
+}
+
+const initialCalibration = (): Calibration => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? 'null') as Partial<Calibration> | null
+    if (saved && typeof saved.speed === 'number' && saved.speed > 0 && typeof saved.samples === 'number') return { speed: saved.speed, samples: saved.samples }
+  } catch {
+    /* storage unavailable or corrupt */
+  }
+  return { speed: 1, samples: 0 }
+}
+
+const storeCalibration = (calibration: Calibration): void => {
+  try {
+    localStorage.setItem(CALIBRATION_KEY, JSON.stringify(calibration))
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Fold one observed first-solution time into the speed estimate: speed = predicted latency / observed, smoothed and clamped. */
+export function calibrate(current: Calibration, predictedLatency: number, observedFirstSolution: number): Calibration {
+  if (!(predictedLatency > 0) || !(observedFirstSolution > 0.05)) return current
+  const observed = Math.min(Math.max(predictedLatency / observedFirstSolution, SPEED_BOUNDS[0]), SPEED_BOUNDS[1])
+  const speed = current.samples === 0 ? observed : current.speed + CALIBRATION_WEIGHT * (observed - current.speed)
+  return { speed: Number(speed.toFixed(3)), samples: current.samples + 1 }
+}
+
+/** The project as sent to the backend: the machine speed travels inside the settings. */
+export function requestProject(project: Project, calibration: Calibration): Project {
+  return { ...project, settings: { ...project.settings, speed: calibration.speed } }
 }
 
 const initialLanguage = (): Language => {
@@ -56,6 +102,27 @@ export const useStowly = create<StowlyState>((set, get) => ({
   language: initialLanguage(),
   selectedBin: 0,
   dirty: false,
+  recommendation: null,
+  calibration: initialCalibration(),
+  refreshRecommendation: async (client) => {
+    const { project, calibration } = get()
+    if (!project.bins.length || !project.items.length) {
+      set({ recommendation: null })
+      return
+    }
+    try {
+      const recommendation = await client.recommend(requestProject(project, calibration))
+      // the project may have changed while the request was in flight; a later refresh will overwrite this one
+      set({ recommendation })
+    } catch {
+      set({ recommendation: null })
+    }
+  },
+  resetCalibration: () => {
+    const calibration = { speed: 1, samples: 0 }
+    storeCalibration(calibration)
+    set({ calibration })
+  },
   setLanguage: (language) => {
     try {
       localStorage.setItem('stowly.language', language)
@@ -92,14 +159,20 @@ export const useStowly = create<StowlyState>((set, get) => ({
   setSelectedBin: (selectedBin) => set({ selectedBin }),
   setError: (error) => set({ error }),
   solve: async (client) => {
-    const { project } = get()
-    set({ solving: true, error: null, result: null })
+    const { project, calibration } = get()
+    set({ solving: true, error: null, result: null, job: null })
     try {
-      const started = await client.solve(project)
+      const started = await client.solve(requestProject(project, calibration))
       set({ job: started })
-      const finished = await client.waitForJob(started.id, 400, (state) => set({ job: state }))
-      if (finished.status === 'done' && finished.result) set({ result: finished.result, selectedBin: 0 })
-      else set({ error: finished.error ?? 'solve failed' })
+      const finished = await client.waitForJob(started.id, 250, (state) => set({ job: state }))
+      if (finished.status === 'done' && finished.result) {
+        set({ result: finished.result, selectedBin: 0 })
+        if (finished.budget && finished.result.firstSolutionTime != null) {
+          const updated = calibrate(get().calibration, finished.budget.latency * finished.budget.speed, finished.result.firstSolutionTime)
+          storeCalibration(updated)
+          set({ calibration: updated })
+        }
+      } else set({ error: finished.error ?? 'solve failed' })
       void client.forget(started.id).catch(() => undefined)
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })

@@ -9,9 +9,9 @@ from pydantic import BaseModel
 from . import __version__
 from .exporters import placements_csv
 from .importers import ImportError_, import_files
-from .models import JobState, Project, SolveResult
+from .models import Budget, JobState, Project, SolveResult
 from .presets import load_presets
-from .solver import JobManager
+from .solver import JobManager, budget_for
 
 
 class ExportRequest(BaseModel):
@@ -43,6 +43,13 @@ def create_app(token: str = '') -> FastAPI:
         if not project.bins or not project.items:
             raise HTTPException(status_code=422, detail='the project needs at least one container and one item')
         return jobs.start(project)
+
+    @app.post('/api/recommend', dependencies=[Depends(authorised)], response_model=Budget)
+    def recommend(project: Project):
+        """The stopping policy a solve of this project would run with (the recommendation, or the manual values with the prediction alongside)."""
+        if not project.bins or not project.items:
+            raise HTTPException(status_code=422, detail='the project needs at least one container and one item')
+        return budget_for(project)
 
     @app.get('/api/jobs/{job_id}', dependencies=[Depends(authorised)], response_model=JobState)
     def job(job_id: str):

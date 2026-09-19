@@ -9,6 +9,7 @@ import { ImportModal } from './components/ImportModal'
 import { PresetDrawer } from './components/PresetDrawer'
 import { ResultPanel } from './components/ResultPanel'
 import { SettingsPanel } from './components/SettingsPanel'
+import { SolveProgress } from './components/SolveProgress'
 import { Viewer3D } from './components/Viewer3D'
 import { BackendClient, type BackendInfo, type PresetEntry } from './lib/api'
 import { newId, parseProject, serializeProject, type Unit } from './lib/project'
@@ -58,6 +59,14 @@ export function App() {
   useEffect(() => {
     if (client) client.presets().then(s.setPresets).catch((err) => setBackendError(String(err)))
   }, [client])
+
+  // The recommended budget follows the cargo, the containers and the solver settings; debounced so typing does not flood the backend.
+  const recommendationKey = JSON.stringify([s.project.bins, s.project.items, s.project.settings.solver, s.project.settings.objective, s.project.settings.alpha, s.project.settings.unloadingConstraint, s.calibration.speed])
+  useEffect(() => {
+    if (!client) return
+    const handle = setTimeout(() => void s.refreshRecommendation(client), 400)
+    return () => clearTimeout(handle)
+  }, [client, recommendationKey])
 
   const save = async () => {
     const path = await window.stowly?.saveText(`${s.project.name || 'project'}.json`, PROJECT_FILTER, serializeProject(s.project))
@@ -141,7 +150,7 @@ export function App() {
                     </Space>
                   )
                 },
-                { key: 'settings', label: t('tabs.settings'), children: <SettingsPanel project={s.project} solving={s.solving} onChange={s.updateSettings} onSolve={() => client && s.solve(client)} /> }
+                { key: 'settings', label: t('tabs.settings'), children: <SettingsPanel project={s.project} solving={s.solving} recommendation={s.recommendation} calibration={s.calibration} onChange={s.updateSettings} onSolve={() => client && s.solve(client)} onResetCalibration={s.resetCalibration} /> }
               ]}
             />
           </Layout.Sider>
@@ -150,7 +159,10 @@ export function App() {
               <Viewer3D project={s.project} result={s.result} selectedBin={s.selectedBin} onSelectBin={s.setSelectedBin} />
             </div>
             <div style={{ flex: 2, minHeight: 0, overflow: 'auto', padding: 12 }}>
-              <ResultPanel project={s.project} result={s.result} error={s.error} selectedBin={s.selectedBin} onExport={exportCsv} />
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <SolveProgress job={s.job} solving={s.solving} result={s.result} volumeValued={s.project.settings.objective === 'knapsack' && s.project.items.every((item) => item.profit == null)} />
+                <ResultPanel project={s.project} result={s.result} error={s.error} selectedBin={s.selectedBin} onExport={exportCsv} />
+              </Space>
             </div>
           </Layout.Content>
         </Layout>

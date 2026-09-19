@@ -22,6 +22,12 @@ describe('BackendClient', () => {
     const init = (fetch as unknown as { mock: { calls: [unknown, RequestInit][] } }).mock.calls[0][1]
     expect((init.headers as Record<string, string>)['X-Stowly-Token']).toBe('tok')
   })
+  it('asks for the recommended budget', async () => {
+    const budget = { source: 'auto', timeLimit: 21, path: 'SOR', latency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
+    const client = new BackendClient(info, fakeFetch({ 'POST /api/recommend': () => ({ body: budget }) }))
+    expect(await client.recommend(demoProject())).toEqual(budget)
+  })
+
   it('surfaces FastAPI error details', async () => {
     const client = new BackendClient(info, fakeFetch({ 'POST /api/solve': () => ({ status: 422, body: { detail: 'needs items' } }) }))
     await expect(client.solve(demoProject())).rejects.toThrow('422: needs items')
