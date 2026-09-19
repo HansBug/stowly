@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BackendClient } from '../lib/api'
 import { demoProject, emptyProject } from '../lib/project'
-import { useStowly } from './project'
+import { calibrate, CALIBRATION_KEY, requestProject, useStowly } from './project'
 
 describe('stowly store', () => {
   beforeEach(() => useStowly.getState().setProject(emptyProject()))
@@ -83,5 +83,51 @@ describe('stowly store', () => {
     const throwing = { ...client, solve: vi.fn(async () => { throw new Error('offline') }) } as unknown as BackendClient
     await useStowly.getState().solve(throwing)
     expect(useStowly.getState().error).toBe('offline')
+  })
+})
+
+describe('time budget in the store', () => {
+  it('calibrates the machine speed from the first-solution time and persists it', () => {
+    expect(calibrate({ speed: 1, samples: 0 }, 4, 2)).toEqual({ speed: 2, samples: 1 })
+    expect(calibrate({ speed: 2, samples: 1 }, 4, 4)).toEqual({ speed: 1.7, samples: 2 })
+    expect(calibrate({ speed: 1, samples: 0 }, 4, 0.01)).toEqual({ speed: 1, samples: 0 })
+    expect(calibrate({ speed: 1, samples: 0 }, 0, 2)).toEqual({ speed: 1, samples: 0 })
+    expect(calibrate({ speed: 1, samples: 0 }, 100, 1).speed).toBe(5)
+    expect(requestProject(demoProject(), { speed: 1.5, samples: 2 }).settings.speed).toBe(1.5)
+  })
+
+  it('refreshes the recommendation and clears it when the project is incomplete or the backend fails', async () => {
+    useStowly.getState().setProject(demoProject())
+    const budget = { source: 'auto', timeLimit: 21, path: 'SOR', latency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
+    const client = { recommend: vi.fn(async () => budget) } as unknown as BackendClient
+    await useStowly.getState().refreshRecommendation(client)
+    expect(useStowly.getState().recommendation).toEqual(budget)
+    expect((client.recommend as ReturnType<typeof vi.fn>).mock.calls[0][0].settings.speed).toBe(useStowly.getState().calibration.speed)
+    const failing = { recommend: vi.fn(async () => { throw new Error('offline') }) } as unknown as BackendClient
+    await useStowly.getState().refreshRecommendation(failing)
+    expect(useStowly.getState().recommendation).toBeNull()
+    useStowly.getState().setProject(emptyProject())
+    await useStowly.getState().refreshRecommendation(client)
+    expect(useStowly.getState().recommendation).toBeNull()
+  })
+
+  it('learns the machine speed from a finished solve and can forget it', async () => {
+    useStowly.getState().resetCalibration()
+    useStowly.getState().setProject(demoProject())
+    const result = { status: 'feasible', objective: 'knapsack', value: 1, bound: null, solveTime: 13, wallTime: 13, bins: [], counts: [], statistics: {}, options: {}, firstSolutionTime: 2 }
+    const budget = { source: 'auto', timeLimit: 21, path: 'TSMS', latency: 4, improvement: 8, alpha: 4, speed: 1 }
+    const client = {
+      solve: vi.fn(async () => ({ id: 'j', status: 'running', budget })),
+      waitForJob: vi.fn(async () => ({ id: 'j', status: 'done', result, budget })),
+      forget: vi.fn(async () => undefined)
+    } as unknown as BackendClient
+    await useStowly.getState().solve(client)
+    expect(useStowly.getState().calibration).toEqual({ speed: 2, samples: 1 })
+    expect(JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? '{}')).toEqual({ speed: 2, samples: 1 })
+    const silent = { ...client, waitForJob: vi.fn(async () => ({ id: 'j', status: 'done', result: { ...result, firstSolutionTime: null }, budget })) } as unknown as BackendClient
+    await useStowly.getState().solve(silent)
+    expect(useStowly.getState().calibration.samples).toBe(1)
+    useStowly.getState().resetCalibration()
+    expect(useStowly.getState().calibration).toEqual({ speed: 1, samples: 0 })
   })
 })

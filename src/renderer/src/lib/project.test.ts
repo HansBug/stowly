@@ -28,7 +28,7 @@ describe('project', () => {
     const old = parseProject('{"schema": "stowly/0", "bins": [{"id": "b", "name": "", "x": 1, "y": 2, "z": 3}], "items": [{"id": "i", "name": "", "x": 1, "y": 1, "z": 1}]}')
     expect(old.bins[0].copies).toBe(1)
     expect(old.items[0].rotations).toBe('all')
-    expect(old.settings.solver).toBe('box')
+    expect(old.settings.solver).toBe('boxstacks')
     expect(old.unit).toBe('mm')
     expect(() => parseProject('{"foo": 1}')).toThrow(/not a Stowly project/)
   })
@@ -47,5 +47,21 @@ describe('project', () => {
     expect(project.items[0].rotations).toBe('all')
     expect(project.settings.unloadingConstraint).toBe('none')
     expect(project.settings.solver).toBe('boxstacks')
+  })
+})
+
+describe('time mode defaults', () => {
+  it('starts new and demo projects on boxstacks with the automatic budget', () => {
+    expect(emptyProject().settings).toMatchObject({ solver: 'boxstacks', timeMode: 'auto', timeLimit: 30 })
+    expect(demoProject().settings).toMatchObject({ solver: 'boxstacks', objective: 'knapsack', timeMode: 'auto' })
+  })
+
+  it('keeps the explicit time limit of an old project file as a manual budget', () => {
+    const old = parseProject(JSON.stringify({ schema: 'stowly/1', name: 'x', bins: [], items: [], settings: { solver: 'box', objective: 'knapsack', timeLimit: 10, optimizationMode: 'anytime', unloadingConstraint: 'none' } }))
+    expect(old.settings).toMatchObject({ solver: 'box', timeMode: 'manual', timeLimit: 10 })
+    const fresh = parseProject(JSON.stringify({ schema: 'stowly/1', name: 'y', bins: [], items: [] }))
+    expect(fresh.settings.timeMode).toBe('auto')
+    const auto = parseProject(JSON.stringify({ schema: 'stowly/1', name: 'z', bins: [], items: [], settings: { timeMode: 'auto', timeLimit: 99 } }))
+    expect(auto.settings.timeMode).toBe('auto')
   })
 })

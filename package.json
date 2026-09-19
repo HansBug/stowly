@@ -1,7 +1,7 @@
 {
   "name": "stowly",
   "productName": "Stowly",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Desktop workbench for three-dimensional packing, built on packingsolver3d.",
   "main": "./out/main/index.js",
   "author": "HansBug <hansbug@buaa.edu.cn>",

@@ -45,12 +45,23 @@ export interface ItemSpec {
   group?: number
 }
 
+export type TimeMode = 'auto' | 'manual'
+
 export interface Settings {
   solver: Solver
   objective: Objective
-  timeLimit: number
   optimizationMode: OptimizationMode
   unloadingConstraint: UnloadingConstraint
+  /** 'auto': packingsolver3d's recommend_time_budget picks time limit and stall stop at solve time; 'manual': the three values below. */
+  timeMode: TimeMode
+  /** Quality-versus-waiting dial of the recommendation (2 fast, 4 balanced, 8 thorough); undefined = the solver's default (box 4, boxstacks 8). */
+  alpha?: number
+  /** Manual mode: seconds; the interface pre-fills them with the recommendation. */
+  timeLimit: number
+  stopWhenUnimprovedFor?: number
+  stopWhenUnimprovedAfter?: number
+  /** Machine speed relative to the estimator's reference machine. The app fills it from its calibration store before each request; it is not a user setting. */
+  speed?: number
 }
 
 export interface Project {
@@ -73,7 +84,7 @@ export function newId(prefix: string): string {
 }
 
 export function emptyProject(name = ''): Project {
-  return { schema: SCHEMA, name, unit: 'mm', bins: [], items: [], settings: { solver: 'box', objective: 'bin-packing', timeLimit: 10, optimizationMode: 'anytime', unloadingConstraint: 'none' } }
+  return { schema: SCHEMA, name, unit: 'mm', bins: [], items: [], settings: { solver: 'boxstacks', objective: 'bin-packing', optimizationMode: 'anytime', unloadingConstraint: 'none', timeMode: 'auto', timeLimit: 30 } }
 }
 
 /** Convert a length shown in the project unit to the millimetre integer the solver needs. */
@@ -130,7 +141,7 @@ export function parseProject(text: string): Project {
     unit: raw.unit ?? 'mm',
     bins: (raw.bins ?? []).map((b) => ({ ...b, copies: b.copies ?? 1, openSides: b.openSides ?? ['x-max'] })),
     items: (raw.items ?? []).map((i) => ({ ...i, copies: i.copies ?? 1, rotations: i.rotations ?? 'all', group: i.group ?? 0 })),
-    settings: { ...base.settings, ...(raw.settings ?? {}) }
+    settings: { ...base.settings, ...(raw.settings ?? {}), timeMode: raw.settings?.timeMode ?? (raw.settings?.timeLimit != null ? 'manual' : 'auto') }
   }
 }
 
@@ -146,6 +157,6 @@ export function demoProject(): Project {
     ['IBC 吨桶', 1200, 1000, 1150, 12, 1100]
   ]
   project.items = cartons.map(([name, x, y, z, copies, weight], index) => ({ id: `item-${index + 1}`, name, x, y, z, copies, weight, rotations: index < 3 ? 'all' : 'upright', group: 0 }))
-  project.settings = { solver: 'box', objective: 'knapsack', timeLimit: 10, optimizationMode: 'anytime', unloadingConstraint: 'none' }
+  project.settings = { solver: 'boxstacks', objective: 'knapsack', optimizationMode: 'anytime', unloadingConstraint: 'none', timeMode: 'auto', timeLimit: 30 }
   return project
 }

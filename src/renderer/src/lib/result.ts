@@ -43,6 +43,10 @@ export interface SolveResult {
   counts: ItemCount[]
   statistics: Record<string, unknown>
   options: Record<string, unknown>
+  /** null: time limit or proof; 'unimproved': the stall stop ended the run; 'callback'. */
+  stopReason?: string | null
+  /** Seconds to the first reported solution, for machine-speed calibration. */
+  firstSolutionTime?: number | null
 }
 
 export function binsUsed(result: SolveResult): number {

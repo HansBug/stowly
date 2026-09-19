@@ -8,10 +8,10 @@ describe('i18n', () => {
   it('defaults to Chinese and can switch to English', async () => {
     setupI18n('zh-CN')
     expect(i18n.t('settings.solve')).toBe('开始求解')
-    const { rerender } = render(<SettingsPanel project={demoProject()} solving={false} onChange={() => undefined} onSolve={() => undefined} />)
+    const { rerender } = render(<SettingsPanel project={demoProject()} solving={false} onChange={() => undefined} onSolve={() => undefined} recommendation={null} calibration={{ speed: 1, samples: 0 }} onResetCalibration={() => undefined} />)
     expect(screen.getByTestId('solve-button').textContent).toContain('开始求解')
     await i18n.changeLanguage('en-US')
-    rerender(<SettingsPanel project={demoProject()} solving={false} onChange={() => undefined} onSolve={() => undefined} />)
+    rerender(<SettingsPanel project={demoProject()} solving={false} onChange={() => undefined} onSolve={() => undefined} recommendation={null} calibration={{ speed: 1, samples: 0 }} onResetCalibration={() => undefined} />)
     expect(screen.getByTestId('solve-button').textContent).toContain('Solve')
     await i18n.changeLanguage('zh-CN')
   })
