@@ -111,7 +111,9 @@ export const useStowly = create<StowlyState>((set, get) => ({
       return
     }
     try {
-      const recommendation = await client.recommend(requestProject(project, calibration))
+      // always ask for the automatic budget: in manual mode the backend would echo the stored values back
+      const request = requestProject(project, calibration)
+      const recommendation = await client.recommend({ ...request, settings: { ...request.settings, timeMode: 'auto' } })
       // the project may have changed while the request was in flight; a later refresh will overwrite this one
       set({ recommendation })
     } catch {
