@@ -84,8 +84,8 @@ describe('main process entry', () => {
     process.argv = ['stowly', `--smoke=${path.join(dir, 'r.json')}`]
     vi.doMock('./smoke', () => ({ smokeTest: vi.fn(async (opts: { rendererDetail: () => Promise<string> }) => ({ ok: false, errors: [await opts.rendererDetail()] })) }))
     const { rendererReady, rendererDetail, watchRendererConsole } = await import('./index')
-    await flush()
-    expect(electron.app.exit).toHaveBeenCalledWith(1)
+    // the exit comes after a chain of awaits whose length depends on the runner; wait for it instead of counting ticks
+    await vi.waitFor(() => expect(electron.app.exit).toHaveBeenCalledWith(1), { timeout: 5000, interval: 20 })
     // console capture: only errors and warnings, in either event shape
     const sink: string[] = []
     const win = { webContents: { on: vi.fn(), executeJavaScript: vi.fn(async () => 'Stowly body') } }
