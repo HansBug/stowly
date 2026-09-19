@@ -69,7 +69,7 @@ const storeCalibration = (calibration: Calibration): void => {
   }
 }
 
-/** Fold one observed first-solution time into the speed estimate: speed = predicted latency / observed, smoothed and clamped. */
+/** Fold one observed first-solution time into the speed estimate: speed = median predicted latency (reference machine) / observed, smoothed and clamped. */
 export function calibrate(current: Calibration, predictedLatency: number, observedFirstSolution: number): Calibration {
   if (!(predictedLatency > 0) || !(observedFirstSolution > 0.05)) return current
   const observed = Math.min(Math.max(predictedLatency / observedFirstSolution, SPEED_BOUNDS[0]), SPEED_BOUNDS[1])
@@ -168,7 +168,7 @@ export const useStowly = create<StowlyState>((set, get) => ({
       if (finished.status === 'done' && finished.result) {
         set({ result: finished.result, selectedBin: 0 })
         if (finished.budget && finished.result.firstSolutionTime != null) {
-          const updated = calibrate(get().calibration, finished.budget.latency * finished.budget.speed, finished.result.firstSolutionTime)
+          const updated = calibrate(get().calibration, finished.budget.typicalLatency * finished.budget.speed, finished.result.firstSolutionTime)
           storeCalibration(updated)
           set({ calibration: updated })
         }

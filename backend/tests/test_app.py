@@ -51,7 +51,7 @@ def test_import_endpoint(client, headers):
 
 def test_recommend_route(client, headers, project):
     body = client.post('/api/recommend', headers=headers, json=project.model_dump(by_alias=True)).json()
-    assert body['source'] == 'manual' and body['timeLimit'] == 2.0 and body['path'] and body['latency'] > 0
+    assert body['source'] == 'manual' and body['timeLimit'] == 2.0 and body['path'] and body['latency'] >= body['typicalLatency'] > 0
     auto = project.model_copy(update={'settings': project.settings.model_copy(update={'timeMode': 'auto'})})
     body = client.post('/api/recommend', headers=headers, json=auto.model_dump(by_alias=True)).json()
     assert body['source'] == 'auto' and body['timeLimit'] >= 1.0 and body['alpha'] == 4.0

@@ -23,7 +23,7 @@ describe('BackendClient', () => {
     expect((init.headers as Record<string, string>)['X-Stowly-Token']).toBe('tok')
   })
   it('asks for the recommended budget', async () => {
-    const budget = { source: 'auto', timeLimit: 21, path: 'SOR', latency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
+    const budget = { source: 'auto', timeLimit: 21, path: 'SOR', latency: 2.7, typicalLatency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
     const client = new BackendClient(info, fakeFetch({ 'POST /api/recommend': () => ({ body: budget }) }))
     expect(await client.recommend(demoProject())).toEqual(budget)
   })

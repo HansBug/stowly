@@ -12,7 +12,7 @@ const numberInput = (testId: string): HTMLElement => {
 import { SettingsPanel } from './SettingsPanel'
 
 const noCalibration = { speed: 1, samples: 0 }
-const budget: Budget = { source: 'auto', timeLimit: 21, stopWhenUnimprovedFor: 9.2, stopWhenUnimprovedAfter: 10.5, path: 'SOR', latency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
+const budget: Budget = { source: 'auto', timeLimit: 21, stopWhenUnimprovedFor: 9.2, stopWhenUnimprovedAfter: 10.5, path: 'SOR', latency: 2.7, typicalLatency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
 const extra = { recommendation: null, calibration: noCalibration, onResetCalibration: () => undefined }
 
 setupI18n('zh-CN')

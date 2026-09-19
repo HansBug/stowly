@@ -75,10 +75,10 @@ def budget_for(project: Project, instance: Optional[Instance] = None) -> Budget:
     if settings.timeMode == 'auto':
         return Budget(source='auto', timeLimit=recommended.time_limit, stopWhenUnimprovedFor=recommended.stop_when_unimproved_for,
                       stopWhenUnimprovedAfter=recommended.stop_when_unimproved_after, path=recommended.path, latency=recommended.latency,
-                      improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
+                      typicalLatency=recommended.typical_latency, improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
     return Budget(source='manual', timeLimit=settings.timeLimit, stopWhenUnimprovedFor=settings.stopWhenUnimprovedFor,
                   stopWhenUnimprovedAfter=settings.stopWhenUnimprovedAfter, path=recommended.path, latency=recommended.latency,
-                  improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
+                  typicalLatency=recommended.typical_latency, improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
 
 
 def solve_project(project: Project, budget: Optional[Budget] = None, on_event: Optional[Callable[[ProgressEvent], None]] = None) -> SolveResult:

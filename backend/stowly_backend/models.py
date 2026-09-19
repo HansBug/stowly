@@ -136,7 +136,8 @@ class Budget(BaseModel):
     stopWhenUnimprovedFor: Optional[float] = None
     stopWhenUnimprovedAfter: Optional[float] = None
     path: str  # upstream algorithm path the estimator predicted (TSMS / TS / SSK / SVC / SOR)
-    latency: float  # predicted seconds to the first solution
+    latency: float  # predicted seconds to the first solution, at the coverage quantile the budget is built on
+    typicalLatency: float  # the median prediction of the same time: the comparison point for machine-speed calibration
     improvement: float  # predicted seconds worth waiting after it
     alpha: float
     speed: float
