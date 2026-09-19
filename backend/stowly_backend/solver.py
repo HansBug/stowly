@@ -157,7 +157,9 @@ class JobManager:
         except Exception as err:  # pragma: no cover - defensive: anything else still ends the job
             update = dict(status='failed', error='%s: %s' % (type(err).__name__, err))
         with self._lock:
-            self._jobs[job_id] = self._jobs[job_id].model_copy(update=update)
+            state = self._jobs.get(job_id)
+            if state is not None:  # a job forgotten while it ran has nowhere to report to
+                self._jobs[job_id] = state.model_copy(update=update)
 
     def get(self, job_id: str):
         """The job as seen now; a running job's ``progress.elapsed`` is refreshed from the clock."""
