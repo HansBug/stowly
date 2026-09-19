@@ -103,6 +103,10 @@ describe('time budget in the store', () => {
     await useStowly.getState().refreshRecommendation(client)
     expect(useStowly.getState().recommendation).toEqual(budget)
     expect((client.recommend as ReturnType<typeof vi.fn>).mock.calls[0][0].settings.speed).toBe(useStowly.getState().calibration.speed)
+    useStowly.getState().updateSettings({ timeMode: 'manual', timeLimit: 99 })
+    await useStowly.getState().refreshRecommendation(client)
+    expect((client.recommend as ReturnType<typeof vi.fn>).mock.calls[1][0].settings).toMatchObject({ timeMode: 'auto', timeLimit: 99 })
+    expect(useStowly.getState().project.settings.timeMode).toBe('manual')
     const failing = { recommend: vi.fn(async () => { throw new Error('offline') }) } as unknown as BackendClient
     await useStowly.getState().refreshRecommendation(failing)
     expect(useStowly.getState().recommendation).toBeNull()
