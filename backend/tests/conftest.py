@@ -30,11 +30,13 @@ def headers():
 
 @pytest.fixture()
 def container_project():
-    """The demo 40' HQ container with more cargo than fits: an anytime knapsack solve keeps improving for seconds, so it reports progress events."""
+    """The demo 40' HQ container with more cargo than fits: an anytime boxstacks knapsack solve reports its first solution within
+    a second even on a slow CI runner and keeps improving for seconds, so it reports progress events (box needs several seconds
+    for its first solution on such runners)."""
     cargo = [(530, 290, 370, 300, 8), (530, 230, 290, 300, 6), (430, 210, 270, 400, 4), (1200, 800, 1200, 24, 450), (1200, 1000, 1150, 12, 1100)]
     return Project(
         name='container', unit='mm',
         bins=[BinSpec(id='hq', name="40' HQ", x=12032, y=2352, z=2698, copies=1, cost=1, maxWeight=26460)],
         items=[ItemSpec(id='c%d' % i, name='cargo %d' % i, x=x, y=y, z=z, copies=c, weight=w, rotations='upright') for i, (x, y, z, c, w) in enumerate(cargo)],
-        settings=Settings(solver='box', objective='knapsack', timeMode='manual', timeLimit=1.5, optimizationMode='anytime'),
+        settings=Settings(solver='boxstacks', objective='knapsack', timeMode='manual', timeLimit=3.0, optimizationMode='anytime'),
     )
