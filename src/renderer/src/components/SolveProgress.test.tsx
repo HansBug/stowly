@@ -7,7 +7,7 @@ import { SolveProgress } from './SolveProgress'
 
 setupI18n('zh-CN')
 
-const budget = { source: 'auto' as const, timeLimit: 20, stopWhenUnimprovedFor: 4, stopWhenUnimprovedAfter: 10, path: 'TSMS', latency: 4.3, improvement: 8.7, alpha: 4, speed: 1 }
+const budget = { source: 'auto' as const, timeLimit: 20, stopWhenUnimprovedFor: 4, stopWhenUnimprovedAfter: 10, path: 'TSMS', latency: 4.3, typicalLatency: 4.3, improvement: 8.7, alpha: 4, speed: 1 }
 const events = [{ time: 1.2, items: 663, bins: 1, profit: 4.2e10, cost: 0, label: 'TSMS n 1' }, { time: 3.5, items: 926, bins: 1, profit: 6.6e10, cost: 0, label: 'TSMS n 8' }]
 const running: JobState = { id: 'j', status: 'running', budget, progress: { startedAt: 0, elapsed: 5, events } }
 const result = (patch: Partial<SolveResult>): SolveResult => ({ status: 'feasible', solver: 'box', objective: 'knapsack', value: 6.6e10, bound: null, solveTime: 13, wallTime: 13.1, bins: [], counts: [], statistics: {}, options: {}, ...patch })

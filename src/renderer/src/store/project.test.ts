@@ -98,7 +98,7 @@ describe('time budget in the store', () => {
 
   it('refreshes the recommendation and clears it when the project is incomplete or the backend fails', async () => {
     useStowly.getState().setProject(demoProject())
-    const budget = { source: 'auto', timeLimit: 21, path: 'SOR', latency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
+    const budget = { source: 'auto', timeLimit: 21, path: 'SOR', latency: 2.7, typicalLatency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
     const client = { recommend: vi.fn(async () => budget) } as unknown as BackendClient
     await useStowly.getState().refreshRecommendation(client)
     expect(useStowly.getState().recommendation).toEqual(budget)
@@ -115,15 +115,16 @@ describe('time budget in the store', () => {
     useStowly.getState().resetCalibration()
     useStowly.getState().setProject(demoProject())
     const result = { status: 'feasible', objective: 'knapsack', value: 1, bound: null, solveTime: 13, wallTime: 13, bins: [], counts: [], statistics: {}, options: {}, firstSolutionTime: 2 }
-    const budget = { source: 'auto', timeLimit: 21, path: 'TSMS', latency: 4, improvement: 8, alpha: 4, speed: 1 }
+    const budget = { source: 'auto', timeLimit: 21, path: 'TSMS', latency: 4, typicalLatency: 2, improvement: 8, alpha: 4, speed: 1 }
     const client = {
       solve: vi.fn(async () => ({ id: 'j', status: 'running', budget })),
       waitForJob: vi.fn(async () => ({ id: 'j', status: 'done', result, budget })),
       forget: vi.fn(async () => undefined)
     } as unknown as BackendClient
     await useStowly.getState().solve(client)
-    expect(useStowly.getState().calibration).toEqual({ speed: 2, samples: 1 })
-    expect(JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? '{}')).toEqual({ speed: 2, samples: 1 })
+    // median prediction 2 s (reference machine) against a 2 s observation: speed 1, not the 4 / 2 = 2 the covered latency would give
+    expect(useStowly.getState().calibration).toEqual({ speed: 1, samples: 1 })
+    expect(JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? '{}')).toEqual({ speed: 1, samples: 1 })
     const silent = { ...client, waitForJob: vi.fn(async () => ({ id: 'j', status: 'done', result: { ...result, firstSolutionTime: null }, budget })) } as unknown as BackendClient
     await useStowly.getState().solve(silent)
     expect(useStowly.getState().calibration.samples).toBe(1)

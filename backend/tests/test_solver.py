@@ -128,6 +128,7 @@ def test_budget_for_auto_takes_the_recommendation(project):
     assert budget.source == 'auto' and budget.path in ('TSMS', 'TS', 'SSK', 'SVC') and budget.alpha == 4.0 and budget.speed == 1.0
     assert budget.timeLimit >= 1.0 and budget.stopWhenUnimprovedFor >= 2.0 and 0 <= budget.stopWhenUnimprovedAfter <= budget.timeLimit
     assert budget.latency > 0 and budget.improvement >= 0
+    assert 0 < budget.typicalLatency <= budget.latency
     quality = budget_for(auto.model_copy(update={'settings': auto.settings.model_copy(update={'alpha': 8.0, 'speed': 2.0})}))
     assert quality.alpha == 8.0 and quality.speed == 2.0 and quality.latency == pytest.approx(budget.latency / 2)
 
@@ -163,7 +164,7 @@ def test_solve_project_passes_the_stall_stop_knobs(project, monkeypatch):
         return real_solve(instance, time_limit=1.0, optimization_mode=options['optimization_mode'])
 
     monkeypatch.setattr(solver_module.box, 'solve', fake_solve)
-    budget = Budget(source='manual', timeLimit=5.0, stopWhenUnimprovedFor=2.0, stopWhenUnimprovedAfter=1.0, path='TS', latency=0.2, improvement=1.0, alpha=4.0, speed=1.0)
+    budget = Budget(source='manual', timeLimit=5.0, stopWhenUnimprovedFor=2.0, stopWhenUnimprovedAfter=1.0, path='TS', latency=0.2, typicalLatency=0.2, improvement=1.0, alpha=4.0, speed=1.0)
     solve_project(project, budget)
     assert seen['time_limit'] == 5.0 and seen['stop_when_unimproved_for'] == 2.0 and seen['stop_when_unimproved_after'] == 1.0
     seen.clear()

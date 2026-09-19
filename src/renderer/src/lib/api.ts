@@ -13,7 +13,10 @@ export interface Budget {
   stopWhenUnimprovedFor?: number | null
   stopWhenUnimprovedAfter?: number | null
   path: string
+  /** Covered (upper) prediction of the first-solution time the budget is built on. */
   latency: number
+  /** Median prediction of the same time: the comparison point for machine-speed calibration. */
+  typicalLatency: number
   improvement: number
   alpha: number
   speed: number
