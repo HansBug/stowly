@@ -21,6 +21,8 @@ export interface Budget {
   improvement: number
   alpha: number
   speed: number
+  /** Set when an automatic single-pass run found nothing at its first limit and got a second attempt: the first limit. */
+  extendedFrom?: number | null
 }
 
 export interface ProgressEvent {

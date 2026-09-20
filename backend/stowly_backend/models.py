@@ -145,6 +145,7 @@ class Budget(BaseModel):
     improvement: float  # predicted seconds worth waiting after it
     alpha: float
     speed: float
+    extendedFrom: Optional[float] = None  # the first limit of an automatic single-pass run that found nothing and was given a second attempt
 
 
 class ProgressEvent(BaseModel):

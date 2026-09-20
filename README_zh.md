@@ -73,7 +73,7 @@ Electron 主进程 ──spawn──▶ python -m stowly_backend --port 0 --toke
 
 提供两个求解器是因为它们建模的东西不同。`box`（上游 `packingsolver::box`）是纯几何装箱：六种旋转都允许，没有任何"必须压在别的货上"的要求，所以结果可能悬空，摆放顺序就是树搜索插入货物的顺序。`boxstacks`（上游 `packingsolver::boxstacks`）把同种货物叠成直立的堆立在地面上，支持叠放上限、上方承重、堆密度、轴荷和卸货约束；Stowly 在这里把"任意"旋转映射为直立（上游只摆 XYZ/YXZ，算法遇到侧躺旋转会失效）、给每种货物独立的堆 id，并转发堆码列。`boxstacks` 在"全部装下"（装箱目标）和单一货物背包上既密又稳；混合货物且装不下时，上游的顺序启发式可能在时限内一无所获——这是上游算法的限制，Stowly 会报"没有找到解"。
 
-等多久由项目决定。上游的 anytime 算法会一直跑到时限，所以后端向 packingsolver3d 的 `recommend_time_budget` 要一个 `time_limit` 加 `stop_when_unimproved_for` / `_after` / `_ratio`（"自动"模式；`POST /api/recommend` 返回同样的数字供界面显示）。估算知道该实例会走上游哪条算法（`algorithm_path`），预测它的首解延迟和之后值得再等的时间；"偏好"就是估算器的 `alpha`（2 / 4 / 8；`box` 默认 4，`boxstacks` 默认 8）。每次求解结束后用预测与实测的首解时间更新一个存在 `localStorage['stowly.calibration']` 里的机器速度系数，慢机器或快机器上第二次求解就已经按比例缩放。"手动设置"模式下四个值由用户决定，初值是推荐值。任务运行期间 `GET /api/jobs/{id}` 同时带着预算和求解器报告的改进事件，进度面板据此显示。
+等多久由项目决定。上游的 anytime 算法会一直跑到时限，所以后端向 packingsolver3d 的 `recommend_time_budget` 要一个 `time_limit` 加 `stop_when_unimproved_for` / `_after` / `_ratio`（"自动"模式；`POST /api/recommend` 返回同样的数字供界面显示）。估算知道该实例会走上游哪条算法（`algorithm_path`），预测它的首解延迟和之后值得再等的时间；"偏好"就是估算器的 `alpha`（2 / 4 / 8；`box` 默认 4，`boxstacks` 默认 8）。每次求解结束后用预测与实测的首解时间更新一个存在 `localStorage['stowly.calibration']` 里的机器速度系数，慢机器或快机器上第二次求解就已经按比例缩放。跑完一轮才有解的路径（多箱 `boxstacks` 的背包 / 变尺寸装箱，上游 `SVC`）按这一轮给上限：机器速度系数只会放长它，自动模式下到时仍无解会用两倍上限再试一次（进度面板会写明），这类求解也不参与速度校准。"手动设置"模式下四个值由用户决定，初值是推荐值。任务运行期间 `GET /api/jobs/{id}` 同时带着预算和求解器报告的改进事件，进度面板据此显示。
 
 主进程启动后端，等它打印 `READY` 行，再把端口和一个随机令牌交给渲染进程。渲染进程通过普通 HTTP 调用后端（预设、导入、求解任务、导出）；令牌用来挡住本机其他程序。求解在工作线程里进行、前端轮询，界面不会卡住。项目模型内部统一存毫米和千克，界面负责换算。状态原样来自 packingsolver3d：只有达到的值等于报告的界时才是 `optimal`。
 

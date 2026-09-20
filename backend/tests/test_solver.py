@@ -134,6 +134,20 @@ def test_budget_for_auto_takes_the_recommendation(project):
     assert quality.alpha == 8.0 and quality.speed == 2.0 and quality.latency == pytest.approx(budget.latency / 2)
 
 
+def test_budget_for_speed_only_lengthens_a_single_pass_budget(container_project):
+    from stowly_backend.solver import budget_for, single_pass
+    two_bins = container_project.model_copy(update={'bins': [container_project.bins[0].model_copy(update={'copies': 2})],
+                                                    'settings': container_project.settings.model_copy(update={'timeMode': 'auto'})})
+    reference = budget_for(two_bins)
+    assert reference.path == 'SVC' and single_pass(reference) and reference.stopWhenUnimprovedAfter == reference.timeLimit and reference.extendedFrom is None
+    fast = budget_for(two_bins.model_copy(update={'settings': two_bins.settings.model_copy(update={'speed': 4.44})}))
+    assert fast.timeLimit == reference.timeLimit and fast.speed == 1.0  # a fast machine gains nothing from a shorter cap on a path that reports nothing before its first pass
+    slow = budget_for(two_bins.model_copy(update={'settings': two_bins.settings.model_copy(update={'speed': 0.5})}))
+    assert slow.timeLimit == pytest.approx(reference.timeLimit * 2) and slow.speed == 0.5
+    one_bin = budget_for(container_project.model_copy(update={'settings': two_bins.settings.model_copy(update={'speed': 2.0})}))
+    assert one_bin.path == 'SOR' and not single_pass(one_bin) and one_bin.speed == 2.0  # other paths keep the factor
+
+
 def test_budget_for_manual_keeps_the_settings_and_still_predicts(project):
     from stowly_backend.solver import budget_for
     manual = project.model_copy(update={'settings': project.settings.model_copy(update={'stopWhenUnimprovedFor': 3.0, 'stopWhenUnimprovedAfter': 1.0, 'stopWhenUnimprovedRatio': 1.5})})
@@ -187,6 +201,59 @@ def test_job_manager_exposes_budget_and_progress(container_project):
     assert state.status == 'done'
     assert state.progress.events and state.progress.events[0].items > 0
     assert state.result.firstSolutionTime == state.progress.events[0].time
+
+
+def _wait(manager, job_id):
+    for _ in range(500):
+        state = manager.get(job_id)
+        if state is None or state.status != 'running':
+            return state
+        time.sleep(0.01)
+    raise AssertionError('job did not finish')
+
+
+def test_job_manager_extends_a_single_pass_auto_run_once(project, monkeypatch):
+    import stowly_backend.solver as solver_module
+    from stowly_backend.models import Budget, ProgressEvent, SolveResult
+    auto = Budget(source='auto', timeLimit=4.0, stopWhenUnimprovedFor=5.0, stopWhenUnimprovedAfter=4.0, stopWhenUnimprovedRatio=4.0, path='SVC', latency=4.0, typicalLatency=2.0, improvement=0.0, alpha=8.0, speed=1.0)
+    calls = []
+    empty = dict(solver='boxstacks', objective='knapsack', value=0.0, bound=None, solveTime=0.0, wallTime=4.0, bins=[], counts=[], statistics={}, options={}, stopReason=None)
+
+    def fake_solve(proj, budget, on_event=None):
+        calls.append(budget)
+        if len(calls) == 1:
+            return SolveResult(status='no-solution', **empty)
+        on_event(ProgressEvent(time=0.5, items=3, bins=2, profit=1.0, cost=2.0, label='SVC it 0'))
+        return SolveResult(status='feasible', **dict(empty, firstSolutionTime=0.5, wallTime=1.0))
+
+    monkeypatch.setattr(solver_module, 'budget_for', lambda proj: auto)
+    monkeypatch.setattr(solver_module, 'solve_project', fake_solve)
+    manager = JobManager()
+    state = _wait(manager, manager.start(project).id)
+    assert state.status == 'done' and state.result.status == 'feasible' and len(calls) == 2
+    assert calls[1].timeLimit == 8.0 and calls[1].stopWhenUnimprovedAfter == 8.0 and calls[1].extendedFrom is None
+    assert state.budget.extendedFrom == 4.0 and state.budget.timeLimit == 12.0 and state.budget.stopWhenUnimprovedAfter == 12.0
+    # the second attempt's times continue from the first attempt's wall time, so the panel keeps one timeline
+    offset = state.progress.events[0].time - 0.5
+    assert offset >= 0 and state.result.firstSolutionTime == pytest.approx(0.5 + offset) and state.result.wallTime == pytest.approx(1.0 + offset)
+
+    calls.clear()
+    monkeypatch.setattr(solver_module, 'solve_project', lambda proj, budget, on_event=None: (calls.append(budget), SolveResult(status='no-solution', **empty))[1])
+    state = _wait(manager, manager.start(project).id)
+    assert state.result.status == 'no-solution' and len(calls) == 2 and state.budget.extendedFrom == 4.0  # a second empty attempt is the end of it
+
+    for budget in (auto.model_copy(update={'source': 'manual'}), auto.model_copy(update={'improvement': 3.0}), auto.model_copy(update={'timeLimit': 600.0})):
+        calls.clear()
+        monkeypatch.setattr(solver_module, 'budget_for', lambda proj, b=budget: b)
+        state = _wait(manager, manager.start(project).id)
+        assert len(calls) == 1 and state.budget.extendedFrom is None, budget
+
+    # a job forgotten during the first attempt gets no second one (start() registers the job before its thread runs, so the fake can look it up)
+    calls.clear()
+    fresh = JobManager()
+    monkeypatch.setattr(solver_module, 'budget_for', lambda proj: auto)
+    monkeypatch.setattr(solver_module, 'solve_project', lambda proj, budget, on_event=None: (calls.append(budget), fresh.forget(next(iter(fresh._jobs))), SolveResult(status='no-solution', **empty))[2])
+    assert _wait(fresh, fresh.start(project).id) is None and len(calls) == 1
 
 
 def test_solve_project_tolerates_a_run_without_events(project, monkeypatch):

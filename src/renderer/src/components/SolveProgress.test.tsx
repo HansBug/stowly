@@ -52,4 +52,17 @@ describe('SolveProgress', () => {
     rerender(<SolveProgress job={{ ...done, progress: null }} solving={false} result={null} volumeValued={false} />)
     expect(screen.getByText(/已用 0\.0 s/)).toBeInTheDocument()
   })
+
+  it('flags an automatic extension and explains a single-pass run that found nothing', () => {
+    const svc = { ...budget, path: 'SVC', improvement: 0, timeLimit: 144, extendedFrom: 48, stopWhenUnimprovedAfter: 144 }
+    const { rerender } = render(<SolveProgress job={{ ...running, budget: svc, progress: { startedAt: 0, elapsed: 60, events: [] } }} solving result={null} volumeValued={false} />)
+    expect(screen.getByTestId('progress-extended').textContent).toBe('首轮未在 48 s 内跑完，已自动延长到 144 s')
+    expect(screen.getByText(/已用 60\.0 s \/ 上限 144 s/)).toBeInTheDocument()
+    rerender(<SolveProgress job={{ ...running, status: 'done', budget: svc }} solving={false} result={result({ status: 'no-solution', stopReason: null, wallTime: 144 })} volumeValued={false} />)
+    expect(screen.getByTestId('progress-live').textContent).toBe('144 s 内没有跑完一轮：SVC 路径要完整跑完一轮才有解。请在手动设置里加大时间上限，或减少容器 / 货物。')
+    expect(screen.queryByTestId('progress-extended')).toBeInTheDocument()
+    rerender(<SolveProgress job={{ ...running, status: 'done', budget: { ...svc, extendedFrom: null } }} solving={false} result={result({ stopReason: null })} volumeValued={false} />)
+    expect(screen.queryByTestId('progress-extended')).not.toBeInTheDocument()
+    expect(screen.getByTestId('progress-live').textContent).toContain('达到时间上限')
+  })
 })
