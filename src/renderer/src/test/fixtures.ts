@@ -28,11 +28,11 @@ export function solvedDemo(): { project: Project; result: SolveResult } {
 
 export const presets: Presets = {
   containers: [
-    { id: 'c40hq', category: 'iso-container', name: { zh: '40 尺高柜', en: "40' HQ" }, x: 12032, y: 2352, z: 2698, maxWeight: 26460, note: { zh: '内尺寸', en: 'inner' }, source: 'ISO 668' },
-    { id: 'truck96', category: 'truck-cn', name: { zh: '9.6 米货车', en: '9.6 m truck' }, x: 9600, y: 2350, z: 2500, maxWeight: 18000, source: 'GB 1589' }
+    { id: 'c40hq', category: 'iso-container', name: { zh: '40 尺高柜', en: "40' HQ", ja: '40 フィートハイキューブ' }, x: 12032, y: 2352, z: 2698, maxWeight: 26460, note: { zh: '内尺寸', en: 'inner', ja: '内寸' }, source: 'ISO 668' },
+    { id: 'truck96', category: 'truck-cn', name: { zh: '9.6 米货车', en: '9.6 m truck', ja: '9.6 m トラック' }, x: 9600, y: 2350, z: 2500, maxWeight: 18000, source: 'GB 1589' }
   ],
   items: [
-    { id: 'post1', category: 'postal-carton-cn', name: { zh: '邮政 1 号纸箱', en: 'China Post carton no. 1' }, x: 530, y: 290, z: 370, weight: 0.5, source: 'China Post' }
+    { id: 'post1', category: 'postal-carton-cn', name: { zh: '邮政 1 号纸箱', en: 'China Post carton no. 1', ja: '中国郵政 1 号段ボール箱' }, x: 530, y: 290, z: 370, weight: 0.5, source: 'China Post' }
   ]
 }
 

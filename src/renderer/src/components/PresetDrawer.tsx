@@ -1,6 +1,7 @@
 import { Alert, Button, Drawer, Input, List, Tabs, Tag, Typography, message } from 'antd'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PRESET_LANGUAGE } from '../i18n'
 import type { PresetEntry, Presets } from '../lib/api'
 import type { Language } from '../store/project'
 
@@ -16,7 +17,7 @@ interface Props {
 export function PresetDrawer({ open, kind, presets, language, onClose, onAdd }: Props) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
-  const lang = language === 'zh-CN' ? 'zh' : 'en'
+  const lang = PRESET_LANGUAGE[language]
   const entries = presets ? presets[kind] : []
   const categories = useMemo(() => Array.from(new Set(entries.map((e) => e.category))), [entries])
   const filtered = (category: string) => entries.filter((e) => e.category === category && (!query || e.name[lang].toLowerCase().includes(query.toLowerCase()) || e.name.en.toLowerCase().includes(query.toLowerCase())))

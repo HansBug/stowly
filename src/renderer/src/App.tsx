@@ -1,5 +1,6 @@
 import { Alert, Badge, Button, ConfigProvider, Input, Layout, Segmented, Select, Space, Spin, Tabs, Tag, Typography, message } from 'antd'
 import enUS from 'antd/locale/en_US'
+import jaJP from 'antd/locale/ja_JP'
 import zhCN from 'antd/locale/zh_CN'
 import { FileAddOutlined, FolderOpenOutlined, ImportOutlined, SaveOutlined, ExperimentOutlined, ExportOutlined } from '@ant-design/icons'
 import { useEffect, useMemo, useState } from 'react'
@@ -13,10 +14,11 @@ import { SolveProgress } from './components/SolveProgress'
 import { Viewer3D } from './components/Viewer3D'
 import { BackendClient, type BackendInfo, type PresetEntry } from './lib/api'
 import { newId, parseProject, serializeProject, type Unit } from './lib/project'
-import { setupI18n } from './i18n'
+import { PRESET_LANGUAGE, setupI18n } from './i18n'
 import { useStowly, type Language } from './store/project'
 
 const PROJECT_FILTER = [{ name: 'Stowly project', extensions: ['json'] }]
+const ANTD_LOCALE: Record<Language, typeof zhCN> = { 'zh-CN': zhCN, 'en-US': enUS, 'ja-JP': jaJP }
 const IMPORT_FILTER = [{ name: 'Cargo lists and instances', extensions: ['csv', 'xlsx', 'xlsm', 'json', 'txt', 'dat', 'thpack'] }]
 
 export function App() {
@@ -100,13 +102,13 @@ export function App() {
     if (path) void message.success(t('common.saved', { path }))
   }
   const addPreset = (entry: PresetEntry) => {
-    const lang = s.language === 'zh-CN' ? 'zh' : 'en'
+    const lang = PRESET_LANGUAGE[s.language]
     if (drawer === 'containers') s.addBin({ id: newId('bin'), name: entry.name[lang], x: entry.x, y: entry.y, z: entry.z, copies: 1, cost: 1, maxWeight: entry.maxWeight ?? null, openSides: entry.openSides ?? ['x-max'] })
     else s.addItem({ id: newId('item'), name: entry.name[lang], x: entry.x, y: entry.y, z: entry.z, copies: 10, weight: entry.weight ?? null, rotations: 'all', group: 0 })
   }
 
   return (
-    <ConfigProvider locale={s.language === 'zh-CN' ? zhCN : enUS} theme={{ token: { borderRadius: 6 } }}>
+    <ConfigProvider locale={ANTD_LOCALE[s.language]} theme={{ token: { borderRadius: 6 } }}>
       <Layout style={{ height: '100vh' }}>
         <Layout.Header style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '8px 16px', height: 'auto', minHeight: 56, lineHeight: 'normal', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <Typography.Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>{t('app.title')}</Typography.Title>
@@ -122,7 +124,7 @@ export function App() {
             <Button size="small" icon={<ExportOutlined />} onClick={exportCsv} disabled={!s.result}>{t('menu.exportCsv')}</Button>
             <Button size="small" icon={<ExperimentOutlined />} onClick={s.loadDemo}>{t('menu.demo')}</Button>
             <Select size="small" prefix={t('menu.unit')} value={s.project.unit} onChange={s.setUnit} options={(['mm', 'cm', 'm', 'in'] as Unit[]).map((u) => ({ value: u, label: u }))} style={{ width: 110 }} />
-            <Segmented size="small" value={s.language} onChange={(value) => s.setLanguage(value as Language)} options={[{ value: 'zh-CN', label: '中文' }, { value: 'en-US', label: 'EN' }]} data-testid="language-switch" />
+            <Segmented size="small" value={s.language} onChange={(value) => s.setLanguage(value as Language)} options={[{ value: 'zh-CN', label: '中文' }, { value: 'en-US', label: 'EN' }, { value: 'ja-JP', label: '日本語' }]} data-testid="language-switch" />
           </Space>
         </Layout.Header>
         <Layout>
