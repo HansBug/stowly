@@ -12,7 +12,9 @@ def test_presets_are_well_formed():
         assert len(ids) == len(set(ids)), 'duplicate ids in %s' % kind
         for entry in presets[kind]:
             assert ID.match(entry['id']), entry['id']
-            assert entry['category'] and entry['name']['zh'] and entry['name']['en']
+            assert entry['category'] and all(entry['name'][lang] for lang in ('zh', 'en', 'ja'))
+            if 'note' in entry:
+                assert set(entry['note']) == {'zh', 'en', 'ja'}, entry['id']
             assert entry['x'] > 0 and entry['y'] > 0 and entry['z'] > 0
             assert entry.get('source'), 'every preset cites its source: %s' % entry['id']
             if kind == 'containers':

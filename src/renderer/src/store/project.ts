@@ -3,7 +3,9 @@ import type { BackendClient, Budget, JobState, Presets } from '../lib/api'
 import { demoProject, emptyProject, newId, type BinSpec, type ItemSpec, type Project, type Settings, type Unit } from '../lib/project'
 import type { SolveResult } from '../lib/result'
 
-export type Language = 'zh-CN' | 'en-US'
+import { isLanguage, type Language } from '../i18n'
+
+export type { Language }
 
 /** Machine speed relative to packingsolver3d's reference machine, learnt from the first-solution time of every solve. */
 export interface Calibration {
@@ -87,7 +89,7 @@ export function requestProject(project: Project, calibration: Calibration): Proj
 const initialLanguage = (): Language => {
   try {
     const saved = localStorage.getItem('stowly.language')
-    if (saved === 'en-US' || saved === 'zh-CN') return saved
+    if (isLanguage(saved)) return saved
   } catch {
     /* storage unavailable */
   }

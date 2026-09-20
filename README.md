@@ -24,7 +24,7 @@ Stowly is a desktop workbench for three-dimensional load planning: describe the 
 - **Honest results**: the status distinguishes a *proven optimal* packing from a *feasible* one whose bound was not closed, and the value / bound pair is always shown.
 - **3D viewer** with hover and click inspection, a loading-order slider, and one scene per container.
 - **Files**: Stowly project JSON (`stowly/1`), CSV / XLSX cargo lists with Chinese or English headers, ESICUP `thpack` / BR text instances, PackingSolver `items.csv` + `bins.csv` pairs; placement export as CSV.
-- **Chinese by default, English one click away.** Every label exists in both languages.
+- **Chinese by default, English and Japanese one click away.** Every label exists in all three languages.
 
 ## Install
 
@@ -48,7 +48,7 @@ Each package bundles a relocatable CPython 3.12 with the backend and `packingsol
 4. Press **Solve**. The 3D view fills up; the result panel reports the status (`feasible (not proven optimal)` for the demo), value / bound, containers used, pieces packed and utilisation, followed by a per-cargo count of what was left out and the placement list. Under `box` the slider above the result is labelled *Solver output order* with a warning tooltip, and an amber tag counts pieces that hang in the air; switch to `boxstacks` for a physically loadable order.
 5. **Export CSV** writes one row per placed piece (container, item, position, placed size, rotation). **Save project** keeps the whole setup as JSON for next time.
 
-Switch the length unit (mm / cm / m / in) in the toolbar at any moment; values convert, the solver always receives millimetres. Switch the language with the 中文 / EN toggle.
+Switch the length unit (mm / cm / m / in) in the toolbar at any moment; values convert, the solver always receives millimetres. Switch the language with the 中文 / EN / 日本語 toggle.
 
 ## Files
 

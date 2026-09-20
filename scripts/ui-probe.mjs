@@ -183,12 +183,21 @@ await step('english', async () => {
   await shot('english')
   // Cargo names in the demo are Chinese by design; only chrome (header, tabs, forms, result labels) must switch.
   // Hidden modals keep stale text until reopened (rc-dialog does not re-render hidden children), so only visible chrome counts.
-  const zh = await page.evaluate(() => [...document.querySelectorAll('.ant-layout-header, .ant-tabs-nav, .ant-form, .ant-descriptions-item-label, .ant-table-thead')].filter((el) => el.checkVisibility()).map((el) => el.innerText).join(' ').replace('中文', '').match(/[一-鿿]+/g))
+  const zh = await page.evaluate(() => [...document.querySelectorAll('.ant-layout-header, .ant-tabs-nav, .ant-form, .ant-descriptions-item-label, .ant-table-thead')].filter((el) => el.checkVisibility()).map((el) => el.innerText).join(' ').replace('中文', '').replace('日本語', '').match(/[一-鿿]+/g))
   if (zh) problems.push(`[i18n] Chinese chrome text remains after switching to English: ${[...new Set(zh)].join(' ')}`)
   await page.getByText('中文', { exact: true }).click()
   await page.waitForTimeout(400)
 })
 
+await step('japanese', async () => {
+  await page.getByText('日本語', { exact: true }).click()
+  await page.waitForTimeout(600)
+  await shot('japanese')
+  const chrome = await page.evaluate(() => [...document.querySelectorAll('.ant-layout-header, .ant-tabs-nav')].filter((el) => el.checkVisibility()).map((el) => el.innerText).join(' '))
+  if (!chrome.includes('コンテナ') || !chrome.includes('ソルバー設定')) problems.push(`[i18n] Japanese chrome did not appear after switching: ${chrome}`)
+  await page.getByText('中文', { exact: true }).click()
+  await page.waitForTimeout(400)
+})
 
 await step('manual container add/edit/delete', async () => {
   await page.getByRole('button', { name: '新建' }).click()

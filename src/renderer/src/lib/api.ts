@@ -52,16 +52,18 @@ export interface Presets {
   items: PresetEntry[]
 }
 
+export type PresetLanguage = 'zh' | 'en' | 'ja'
+
 export interface PresetEntry {
   id: string
   category: string
-  name: { zh: string; en: string }
+  name: Record<PresetLanguage, string>
   x: number
   y: number
   z: number
   maxWeight?: number | null
   weight?: number | null
-  note?: { zh: string; en: string }
+  note?: Record<PresetLanguage, string>
   source: string
   openSides?: Side[]
 }

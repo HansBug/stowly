@@ -21,10 +21,12 @@ describe('PresetDrawer', () => {
     expect(screen.getByText('40 尺高柜')).toBeInTheDocument()
   })
 
-  it('renders cargo presets in English and copes with missing presets', () => {
+  it('renders cargo presets in English and Japanese and copes with missing presets', () => {
     const { rerender } = render(<PresetDrawer open kind="items" presets={presets} language="en-US" onClose={vi.fn()} onAdd={vi.fn()} />)
     expect(screen.getByText('China Post carton no. 1')).toBeInTheDocument()
     expect(screen.getByText(/0\.5 kg/)).toBeInTheDocument()
+    rerender(<PresetDrawer open kind="items" presets={presets} language="ja-JP" onClose={vi.fn()} onAdd={vi.fn()} />)
+    expect(screen.getByText('中国郵政 1 号段ボール箱')).toBeInTheDocument()
     rerender(<PresetDrawer open kind="items" presets={null} language="en-US" onClose={vi.fn()} onAdd={vi.fn()} />)
     expect(screen.queryByText('China Post carton no. 1')).not.toBeInTheDocument()
   })

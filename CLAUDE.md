@@ -14,7 +14,7 @@ Three audiences: a planner who loads a cargo list and wants a picture and a CSV;
 2. **The solver is packingsolver3d, unchanged, and its physics is stated, not hidden.** Objectives, statuses, rotation tokens and the value / bound pair are forwarded as the library reports them. Upstream `box` has no support constraint and no loading-order concept (tree search along an x skyline; a new item's z is 0 or the top of some skyline face, `src/box/tree_search.cpp` line ~568), so the interface labels its placement order *solver output order* with a warning and counts floating pieces (`floatingPlacements`); `boxstacks` outputs stack by stack from the floor up and is labelled *loading order*. The only loading-order machinery upstream has is `boxstacks`' `group_id` + `unloading_constraint` (door at the x-max / y-max end, group 0 unloaded first, `src/rectangle/tree_search.cpp` `IncreasingX` / `OnlyXMovements` checks). `optimal` is shown only when the library says so; a good-looking packing that was not proven stays `feasible`. Anything the library refuses is shown as an error with the library's message, never silently worked around.
 3. **Millimetres and kilograms inside.** The project model (`lib/project.ts`, `models.py`) stores integers in mm and floats in kg; the interface converts for display (`toMm` / `fromMm`) and the solver never sees display units. Cargo lists are imported with the unit the user chose in the dialog.
 4. **Runs offline from one installer.** Every package carries a relocatable CPython with the backend and packingsolver3d. A packaged build never falls back to a system interpreter: a missing bundle must fail loudly (`locatePython`), because "works on the developer's machine" is the failure mode we guard against.
-5. **Chinese first, English complete.** Default language zh-CN, en-US one click away, both persisted in `localStorage['stowly.language']`. Every user-visible string goes through `react-i18next`; a test enforces identical key sets in `zh-CN.json` and `en-US.json`.
+5. **Chinese first, English and Japanese complete.** Default language zh-CN, en-US and ja-JP one click away, the choice persisted in `localStorage['stowly.language']`. Every user-visible string goes through `react-i18next`; a test enforces identical key sets in `zh-CN.json`, `en-US.json` and `ja-JP.json`, and the language list lives in one place (`i18n/index.ts`: `resources`, `Language`, `PRESET_LANGUAGE`). Presets carry `name` / `note` in all three; import header synonyms stay Chinese and English.
 6. **Presets carry their sources.** Built-in containers and cargo types are public typical values; every entry has a `source` string and `presets/SOURCES.md` explains where the numbers come from. Never add a preset without one.
 7. **Evidence over claims.** Compatibility statements in the READMEs are backed by a CI job that exercises them (the `ubuntu:20.04` container test for Ubuntu 20.04, the toolchain-hidden smoke runs for Windows and macOS). If a claim cannot be tested in CI, it is phrased as untested.
 
@@ -114,7 +114,7 @@ Rules: new behaviour comes with a test on the side it lives; a bug found by the 
 
 ## Conventions
 
-- Code, comments, commit messages, workflow files and this guide are in English; the interface is bilingual; conversation with the maintainer is in Chinese.
+- Code, comments, commit messages, workflow files and this guide are in English; the interface is trilingual (zh-CN, en-US, ja-JP); conversation with the maintainer is in Chinese.
 - Commits: `type(scope): imperative summary`, types `feat fix docs test refactor chore ci build`, scopes `renderer main preload backend importers presets i18n ci packaging docs`. Non-trivial commits get a body with `-` bullets; keep the `Co-Authored-By` trailer.
 - TypeScript: strict, no `any` except at the IPC boundary where Electron's types force it; components are functions with typed props; no default exports except where a framework requires one.
 - Python: 3.10+ syntax is allowed (the backend is not a library), pydantic v2 models, no broad `except Exception` without a comment saying why; importers raise `ImportError_` with a message the interface can show.
@@ -123,13 +123,15 @@ Rules: new behaviour comes with a test on the side it lives; a bug found by the 
 
 ## Change checklists
 
-**Add a preset.** Append to `backend/stowly_backend/presets/containers.json` or `items.json` with `id`, `category`, `name.zh`, `name.en`, dimensions in mm (inner dimensions for containers), `maxWeight` or `weight` in kg, optional `note`, and a `source`; add the category to `presets.categories` in both i18n files if new; describe the source in `SOURCES.md`; `test_presets.py` checks the schema.
+**Add a preset.** Append to `backend/stowly_backend/presets/containers.json` or `items.json` with `id`, `category`, `name.zh`, `name.en`, `name.ja`, dimensions in mm (inner dimensions for containers), `maxWeight` or `weight` in kg, optional `note`, and a `source`; add the category to `presets.categories` in both i18n files if new; describe the source in `SOURCES.md`; `test_presets.py` checks the schema.
 
 **Add a field to the model.** `lib/project.ts` and `models.py` together; `EditableTable` column (mind the fixed widths); `solver.build_instance` mapping if the solver consumes it; `serializeProject` / `parseProject` defaults so old project files still load; importer synonyms if a cargo list can carry it; tests on both sides; both READMEs if user-visible.
 
 **Add an import format.** A parser in `importers.py` returning a `Project`, detection in `import_files`, a fixture-based test, the `IMPORT_FILTER` extensions in `App.tsx`, the hint text in both i18n files, the Files table in both READMEs.
 
-**Add a UI string.** Same key in `zh-CN.json` and `en-US.json` (the key-set test fails otherwise); keep toolbar labels short in English so the header does not wrap at 1100 px.
+**Add a UI string.** Same key in `zh-CN.json`, `en-US.json` and `ja-JP.json` (the key-set test fails otherwise); keep toolbar labels short in English and Japanese so the header does not wrap at 1100 px.
+
+**Add a language.** A `<tag>.json` with the full key set, one line in `resources` in `i18n/index.ts` (the `Language` type, `LANGUAGES`, `isLanguage` and the store's saved-choice check follow from it), its key in `PRESET_LANGUAGE` plus `name` / `note` entries in both preset files (`test_presets.py` checks them), the antd locale in `ANTD_LOCALE` and a `Segmented` option in `App.tsx`, the probe's language step, both READMEs and this principle 5.
 
 **Bump Electron, Node or Python.** Check the compatibility table above and the floors it cites; update `package.json` / `scripts/prepare-python.mjs`; run Build Desktop (push a `ci/**` branch) and read the smoke reports before merging; update the table and both READMEs.
 
