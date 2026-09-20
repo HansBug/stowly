@@ -22,6 +22,7 @@ export function SolveProgress({ job, solving, result, volumeValued }: Props) {
   const elapsed = solving ? job.progress?.elapsed ?? 0 : result?.wallTime ?? job.progress?.elapsed ?? 0
   const percent = solving ? Math.min(99, Math.round((elapsed / budget.timeLimit) * 100)) : 100
   const last = events[events.length - 1]
+  const singlePass = budget.improvement === 0
   const fmtValue = (v: number) => (volumeValued ? `${(v / 1e9).toFixed(2)} m³` : v.toLocaleString('en-US', { maximumFractionDigits: 2 }))
 
   let finished: string | null = null
@@ -29,6 +30,7 @@ export function SolveProgress({ job, solving, result, volumeValued }: Props) {
     if (result.stopReason === 'unimproved') finished = t('progress.finishedUnimproved', { silence: Math.max(0, elapsed - (last?.time ?? 0)).toFixed(1), since: (last?.time ?? 0).toFixed(1) })
     else if (result.stopReason === 'callback') finished = t('progress.finishedCallback')
     else if (result.status === 'optimal') finished = t('progress.finishedProved')
+    else if (result.status === 'no-solution' && singlePass) finished = t('progress.finishedSinglePass', { path: budget.path, timeLimit: budget.timeLimit.toFixed(0) })
     else finished = t('progress.finishedLimit')
   }
 
@@ -40,6 +42,7 @@ export function SolveProgress({ job, solving, result, volumeValued }: Props) {
         <Tag>{t('progress.path', { path: budget.path })}</Tag>
         <Typography.Text type="secondary">{t('progress.elapsed', { elapsed: elapsed.toFixed(1), timeLimit: budget.timeLimit.toFixed(0) })}</Typography.Text>
       </Space>
+      {budget.extendedFrom != null ? <Typography.Text type="warning" data-testid="progress-extended">{t('progress.extended', { first: budget.extendedFrom.toFixed(0), timeLimit: budget.timeLimit.toFixed(0) })}</Typography.Text> : null}
       <Progress percent={percent} status={solving ? 'active' : result?.status === 'no-solution' || result?.status === 'infeasible' ? 'exception' : 'success'} size="small" data-testid="progress-bar" />
       <Typography.Text data-testid="progress-live">
         {finished

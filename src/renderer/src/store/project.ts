@@ -55,10 +55,11 @@ export interface StowlyState {
   solve: (client: BackendClient) => Promise<void>
 }
 
-const initialCalibration = (): Calibration => {
+/** The stored calibration, or the neutral one when it is missing, corrupt or outside the bounds (0.1.2 let one sub-second first solution write 4.44, and a factor that large starves single-pass solves that then never produce a first solution to recalibrate from). */
+export const loadCalibration = (): Calibration => {
   try {
     const saved = JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? 'null') as Partial<Calibration> | null
-    if (saved && typeof saved.speed === 'number' && saved.speed > 0 && typeof saved.samples === 'number') return { speed: saved.speed, samples: saved.samples }
+    if (saved && typeof saved.speed === 'number' && saved.speed >= SPEED_BOUNDS[0] && saved.speed <= SPEED_BOUNDS[1] && typeof saved.samples === 'number') return { speed: saved.speed, samples: saved.samples }
   } catch {
     /* storage unavailable or corrupt */
   }
@@ -107,7 +108,7 @@ export const useStowly = create<StowlyState>((set, get) => ({
   selectedBin: 0,
   dirty: false,
   recommendation: null,
-  calibration: initialCalibration(),
+  calibration: loadCalibration(),
   refreshRecommendation: async (client) => {
     const { project, calibration } = get()
     if (!project.bins.length || !project.items.length) {
@@ -173,7 +174,8 @@ export const useStowly = create<StowlyState>((set, get) => ({
       const finished = await client.waitForJob(started.id, 250, (state) => set({ job: state }))
       if (finished.status === 'done' && finished.result) {
         set({ result: finished.result, selectedBin: 0 })
-        if (finished.budget && finished.result.firstSolutionTime != null) {
+        // a single-pass path's first solution is a whole pass on a thinly measured formula: it says little about the machine
+        if (finished.budget && finished.budget.improvement > 0 && finished.result.firstSolutionTime != null) {
           const updated = calibrate(get().calibration, finished.budget.typicalLatency * finished.budget.speed, finished.result.firstSolutionTime)
           storeCalibration(updated)
           set({ calibration: updated })

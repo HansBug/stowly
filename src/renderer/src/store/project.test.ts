@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BackendClient } from '../lib/api'
 import { demoProject, emptyProject } from '../lib/project'
-import { calibrate, CALIBRATION_KEY, requestProject, useStowly } from './project'
+import { calibrate, CALIBRATION_KEY, loadCalibration, requestProject, useStowly } from './project'
 
 describe('stowly store', () => {
   beforeEach(() => useStowly.getState().setProject(emptyProject()))
@@ -116,6 +116,17 @@ describe('time budget in the store', () => {
     expect(useStowly.getState().recommendation).toBeNull()
   })
 
+  it('loads a stored calibration only when it is inside the bounds', () => {
+    localStorage.setItem(CALIBRATION_KEY, JSON.stringify({ speed: 2, samples: 3 }))
+    expect(loadCalibration()).toEqual({ speed: 2, samples: 3 })
+    localStorage.setItem(CALIBRATION_KEY, JSON.stringify({ speed: 4.44, samples: 1 })) // what 0.1.2 wrote from one sub-second first solution
+    expect(loadCalibration()).toEqual({ speed: 1, samples: 0 })
+    localStorage.setItem(CALIBRATION_KEY, 'not json')
+    expect(loadCalibration()).toEqual({ speed: 1, samples: 0 })
+    localStorage.removeItem(CALIBRATION_KEY)
+    expect(loadCalibration()).toEqual({ speed: 1, samples: 0 })
+  })
+
   it('learns the machine speed from a finished solve and can forget it', async () => {
     useStowly.getState().resetCalibration()
     useStowly.getState().setProject(demoProject())
@@ -132,6 +143,10 @@ describe('time budget in the store', () => {
     expect(JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? '{}')).toEqual({ speed: 1, samples: 1 })
     const silent = { ...client, waitForJob: vi.fn(async () => ({ id: 'j', status: 'done', result: { ...result, firstSolutionTime: null }, budget })) } as unknown as BackendClient
     await useStowly.getState().solve(silent)
+    expect(useStowly.getState().calibration.samples).toBe(1)
+    // a single-pass path (SVC, no improvement budget) does not calibrate: its first solution is a whole pass
+    const singlePass = { ...client, waitForJob: vi.fn(async () => ({ id: 'j', status: 'done', result: { ...result, firstSolutionTime: 20 }, budget: { ...budget, path: 'SVC', improvement: 0 } })) } as unknown as BackendClient
+    await useStowly.getState().solve(singlePass)
     expect(useStowly.getState().calibration.samples).toBe(1)
     useStowly.getState().resetCalibration()
     expect(useStowly.getState().calibration).toEqual({ speed: 1, samples: 0 })

@@ -2,11 +2,12 @@
 import threading
 import time
 import uuid
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 from packingsolver3d import ALL_ROTATIONS, BinType, Instance, ItemType, Objective, OptimizationMode, Rotation, UnloadingConstraint, box, boxstacks, \
     recommend_time_budget
 from packingsolver3d.errors import PackingSolverError
+from packingsolver3d.estimate import MAX_TIME_LIMIT
 
 from .models import Budget, ItemCount, JobState, PackedBin, Placement, Progress, ProgressEvent, Project, SolveResult
 
@@ -71,7 +72,12 @@ def budget_for(project: Project, instance: Optional[Instance] = None) -> Budget:
     solution next to the user's numbers.
     """
     settings = project.settings
-    recommended = recommend_time_budget(instance or build_instance(project), settings.solver, alpha=settings.alpha, speed=settings.speed)
+    instance = instance or build_instance(project)
+    recommended = recommend_time_budget(instance, settings.solver, alpha=settings.alpha, speed=settings.speed)
+    if single_pass(recommended) and settings.speed > 1:
+        # A single-pass path reports nothing before its first full pass, so a fast machine gains nothing from a shorter cap,
+        # while an over-estimated speed factor ends the solve with no solution at all: the factor only ever lengthens it.
+        recommended = recommend_time_budget(instance, settings.solver, alpha=settings.alpha, speed=1.0)
     if settings.timeMode == 'auto':
         return Budget(source='auto', timeLimit=recommended.time_limit, stopWhenUnimprovedFor=recommended.stop_when_unimproved_for,
                       stopWhenUnimprovedAfter=recommended.stop_when_unimproved_after, stopWhenUnimprovedRatio=recommended.stop_when_unimproved_ratio,
@@ -81,6 +87,31 @@ def budget_for(project: Project, instance: Optional[Instance] = None) -> Budget:
                   stopWhenUnimprovedAfter=settings.stopWhenUnimprovedAfter, stopWhenUnimprovedRatio=settings.stopWhenUnimprovedRatio,
                   path=recommended.path, latency=recommended.latency,
                   typicalLatency=recommended.typical_latency, improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
+
+
+EXTENSION_FACTOR = 2.0  # the second attempt of a single-pass run gets twice the first limit
+
+
+def single_pass(budget) -> bool:
+    """True for algorithm paths that report nothing before their first full pass (multi-bin boxstacks knapsack / variable-sized bin
+    packing, upstream SVC): the estimator budgets no improvement time for them, so a limit below that pass means no solution."""
+    return budget.improvement == 0
+
+
+def extendable(budget: Budget, result: SolveResult) -> bool:
+    """An automatic single-pass budget that ran out before its first pass gets one more attempt; a manual limit is the user's word."""
+    return (budget.source == 'auto' and single_pass(budget) and budget.extendedFrom is None and budget.timeLimit < MAX_TIME_LIMIT
+            and result.status == 'no-solution' and result.stopReason is None)
+
+
+def extend(budget: Budget) -> Tuple[Budget, Budget]:
+    """The budget shown for an extended job (both attempts together, ``extendedFrom`` = the first limit) and the budget the second attempt runs with."""
+    second_limit = min(budget.timeLimit * EXTENSION_FACTOR, MAX_TIME_LIMIT)
+    after = budget.stopWhenUnimprovedAfter is not None
+    second = budget.model_copy(update=dict(timeLimit=second_limit, stopWhenUnimprovedAfter=second_limit if after else None))
+    total = budget.timeLimit + second_limit
+    shown = budget.model_copy(update=dict(timeLimit=total, stopWhenUnimprovedAfter=total if after else None, extendedFrom=budget.timeLimit))
+    return shown, second
 
 
 def solve_project(project: Project, budget: Optional[Budget] = None, on_event: Optional[Callable[[ProgressEvent], None]] = None) -> SolveResult:
@@ -145,7 +176,11 @@ class JobManager:
         return job
 
     def _run(self, job_id: str, project: Project, budget: Budget) -> None:
+        offset = [0.0]  # wall time of a first attempt that found nothing; the second attempt's times continue from it
+
         def on_event(event: ProgressEvent) -> None:
+            if offset[0]:
+                event = event.model_copy(update=dict(time=event.time + offset[0]))
             with self._lock:
                 state = self._jobs.get(job_id)
                 if state is None or state.progress is None:
@@ -155,6 +190,17 @@ class JobManager:
 
         try:
             result = solve_project(project, budget, on_event)
+            if extendable(budget, result):
+                with self._lock:
+                    state = self._jobs.get(job_id)
+                    if state is not None and state.progress is not None:
+                        shown, second = extend(budget)
+                        offset[0] = time.time() - state.progress.startedAt
+                        self._jobs[job_id] = state.model_copy(update=dict(budget=shown))
+                if offset[0]:  # a job forgotten during the first attempt has nobody waiting for a second one
+                    result = solve_project(project, second, on_event)
+                    first = result.firstSolutionTime
+                    result = result.model_copy(update=dict(wallTime=result.wallTime + offset[0], firstSolutionTime=None if first is None else first + offset[0]))
             update = dict(status='done', result=result)
         except (PackingSolverError, ValueError) as err:
             update = dict(status='failed', error=str(err))
