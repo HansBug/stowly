@@ -191,13 +191,14 @@ class JobManager:
         try:
             result = solve_project(project, budget, on_event)
             if extendable(budget, result):
+                second = None
                 with self._lock:
                     state = self._jobs.get(job_id)
-                    if state is not None and state.progress is not None:
+                    if state is not None and state.progress is not None:  # a job forgotten during the first attempt has nobody waiting for a second one
                         shown, second = extend(budget)
-                        offset[0] = time.time() - state.progress.startedAt
+                        offset[0] = time.time() - state.progress.startedAt  # may be 0.0 on Windows' 16 ms clock, so it is not the flag
                         self._jobs[job_id] = state.model_copy(update=dict(budget=shown))
-                if offset[0]:  # a job forgotten during the first attempt has nobody waiting for a second one
+                if second is not None:
                     result = solve_project(project, second, on_event)
                     first = result.firstSolutionTime
                     result = result.model_copy(update=dict(wallTime=result.wallTime + offset[0], firstSolutionTime=None if first is None else first + offset[0]))
