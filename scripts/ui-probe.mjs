@@ -87,7 +87,8 @@ await step('settings + solve', async () => {
   // the demo opens on boxstacks; the rest of this step checks the box viewer labels, so switch first
   await page.locator('.ant-layout-sider .ant-select').filter({ visible: true }).first().click()
   await page.locator('.ant-select-item-option[title="box"]').click()
-  await page.waitForFunction(() => document.querySelector('[data-testid="recommendation"]')?.textContent?.includes('预计首解'), null, { timeout: 15000 })
+  // wait for the recommendation of the box solver (the boxstacks one is still on screen right after the switch)
+  await page.waitForFunction(() => document.querySelector('[data-testid="recommendation"]')?.textContent?.includes('TSMS'), null, { timeout: 15000 })
   const recommendation = await page.getByTestId('recommendation').innerText()
   console.log('     recommendation:', recommendation)
   if (!/上限 \d+ s/.test(recommendation)) problems.push(`[ui] automatic budget line missing, got ${JSON.stringify(recommendation)}`)
@@ -95,6 +96,7 @@ await step('settings + solve', async () => {
   await page.getByTestId('time-mode').getByText('手动设置').click()
   await page.waitForTimeout(300)
   if (!(await page.getByTestId('manual-time').isVisible())) problems.push('[ui] manual time fields did not open')
+  for (const id of ['time-limit', 'stop-for', 'stop-after', 'stop-ratio']) if (!(await page.getByTestId(id).isVisible())) problems.push(`[ui] manual field ${id} missing`)
   await shot('settings-manual')
   await page.getByTestId('time-mode').getByText('自动（推荐）').click()
   await page.waitForTimeout(300)
@@ -239,6 +241,8 @@ await step('preset add', async () => {
 })
 
 await step('save/import through stubbed dialogs', async () => {
+  // the stubbed open dialog returns <outDir>/cargo.csv: write the fixture here instead of relying on a leftover file
+  fs.writeFileSync(path.join(outDir, 'cargo.csv'), '名称,长,宽,高,数量,重量\n探针纸箱 A,600,400,300,10,8\n探针纸箱 B,500,300,200,20,5\n')
   await page.getByRole('button', { name: '保存项目' }).click()
   await page.waitForTimeout(600)
   if (!fs.existsSync(path.join(outDir, 'demo.json'))) problems.push('[ui] save did not write demo.json')

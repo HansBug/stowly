@@ -13,7 +13,9 @@ export interface Calibration {
 
 export const CALIBRATION_KEY = 'stowly.calibration'
 const CALIBRATION_WEIGHT = 0.3
-const SPEED_BOUNDS: [number, number] = [0.2, 5]
+const SPEED_BOUNDS: [number, number] = [0.33, 3]
+/** Sub-second first solutions say more about the estimator's residual than about the machine, so they do not calibrate. */
+const CALIBRATION_MIN_OBSERVED = 1.0
 
 export interface StowlyState {
   project: Project
@@ -69,9 +71,9 @@ const storeCalibration = (calibration: Calibration): void => {
   }
 }
 
-/** Fold one observed first-solution time into the speed estimate: speed = median predicted latency (reference machine) / observed, smoothed and clamped. */
+/** Fold one observed first-solution time into the speed estimate: speed = median predicted latency (reference machine) / observed, smoothed and clamped to 1/3 ... 3; observations under a second are ignored. */
 export function calibrate(current: Calibration, predictedLatency: number, observedFirstSolution: number): Calibration {
-  if (!(predictedLatency > 0) || !(observedFirstSolution > 0.05)) return current
+  if (!(predictedLatency > 0) || !(observedFirstSolution >= CALIBRATION_MIN_OBSERVED)) return current
   const observed = Math.min(Math.max(predictedLatency / observedFirstSolution, SPEED_BOUNDS[0]), SPEED_BOUNDS[1])
   const speed = current.samples === 0 ? observed : current.speed + CALIBRATION_WEIGHT * (observed - current.speed)
   return { speed: Number(speed.toFixed(3)), samples: current.samples + 1 }

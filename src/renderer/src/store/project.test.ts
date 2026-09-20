@@ -90,9 +90,10 @@ describe('time budget in the store', () => {
   it('calibrates the machine speed from the first-solution time and persists it', () => {
     expect(calibrate({ speed: 1, samples: 0 }, 4, 2)).toEqual({ speed: 2, samples: 1 })
     expect(calibrate({ speed: 2, samples: 1 }, 4, 4)).toEqual({ speed: 1.7, samples: 2 })
-    expect(calibrate({ speed: 1, samples: 0 }, 4, 0.01)).toEqual({ speed: 1, samples: 0 })
+    expect(calibrate({ speed: 1, samples: 0 }, 4, 0.9)).toEqual({ speed: 1, samples: 0 }) // sub-second observations do not calibrate
     expect(calibrate({ speed: 1, samples: 0 }, 0, 2)).toEqual({ speed: 1, samples: 0 })
-    expect(calibrate({ speed: 1, samples: 0 }, 100, 1).speed).toBe(5)
+    expect(calibrate({ speed: 1, samples: 0 }, 100, 1).speed).toBe(3)
+    expect(calibrate({ speed: 1, samples: 0 }, 1, 100).speed).toBe(0.33)
     expect(requestProject(demoProject(), { speed: 1.5, samples: 2 }).settings.speed).toBe(1.5)
   })
 

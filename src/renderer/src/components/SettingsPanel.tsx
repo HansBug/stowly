@@ -37,21 +37,27 @@ export function SettingsPanel({ project, solving, recommendation, calibration, o
   const manual = settings.timeMode === 'manual'
   const preference = PREFERENCES.find((p) => p.alpha === settings.alpha)?.key ?? 'default'
 
+  /** The manual fields as pre-filled from a recommendation: rounded, undefined where the recommendation has no value. */
+  const fromRecommendation = (r: Budget) => ({
+    timeLimit: round1(r.timeLimit),
+    stopWhenUnimprovedFor: r.stopWhenUnimprovedFor == null ? undefined : round1(r.stopWhenUnimprovedFor),
+    stopWhenUnimprovedAfter: r.stopWhenUnimprovedAfter == null ? undefined : round1(r.stopWhenUnimprovedAfter),
+    stopWhenUnimprovedRatio: r.stopWhenUnimprovedRatio == null ? undefined : round1(r.stopWhenUnimprovedRatio)
+  })
   /** Switching to manual mode starts from the recommendation, so the fields never open on stale or empty values. */
   const setTimeMode = (timeMode: TimeMode) => {
-    if (timeMode === 'manual' && recommendation) {
-      onChange({ timeMode, timeLimit: round1(recommendation.timeLimit), stopWhenUnimprovedFor: recommendation.stopWhenUnimprovedFor == null ? undefined : round1(recommendation.stopWhenUnimprovedFor),
-        stopWhenUnimprovedAfter: recommendation.stopWhenUnimprovedAfter == null ? undefined : round1(recommendation.stopWhenUnimprovedAfter) })
-    } else onChange({ timeMode })
+    if (timeMode === 'manual' && recommendation) onChange({ timeMode, ...fromRecommendation(recommendation) })
+    else onChange({ timeMode })
   }
   const useRecommended = () => {
-    if (!recommendation) return
-    onChange({ timeLimit: round1(recommendation.timeLimit), stopWhenUnimprovedFor: recommendation.stopWhenUnimprovedFor == null ? undefined : round1(recommendation.stopWhenUnimprovedFor),
-      stopWhenUnimprovedAfter: recommendation.stopWhenUnimprovedAfter == null ? undefined : round1(recommendation.stopWhenUnimprovedAfter) })
+    if (recommendation) onChange(fromRecommendation(recommendation))
   }
 
   const recommendationText = recommendation
-    ? t('settings.recommendation', { latency: recommendation.latency.toFixed(1), timeLimit: recommendation.timeLimit.toFixed(0), patience: (recommendation.stopWhenUnimprovedFor ?? 0).toFixed(1), after: (recommendation.stopWhenUnimprovedAfter ?? 0).toFixed(1) })
+    ? t('settings.recommendation', {
+        latency: recommendation.latency.toFixed(1), timeLimit: recommendation.timeLimit.toFixed(0),
+        ratio: (recommendation.stopWhenUnimprovedRatio ?? 0).toFixed(1), patience: (recommendation.stopWhenUnimprovedFor ?? 0).toFixed(0), after: (recommendation.stopWhenUnimprovedAfter ?? 0).toFixed(1)
+      })
     : project.bins.length && project.items.length ? t('settings.recommendationPending') : t('settings.recommendationUnavailable')
 
   return (
@@ -81,20 +87,27 @@ export function SettingsPanel({ project, solving, recommendation, calibration, o
         </Space>
       </Form.Item>
       {manual ? (
-        <Space wrap align="end" data-testid="manual-time">
-          <Form.Item label={t('settings.timeLimit')} style={{ marginBottom: 8 }}>
-            <InputNumber data-testid="time-limit" min={0.5} max={3600} step={1} value={settings.timeLimit} onChange={(v) => v !== null && onChange({ timeLimit: Number(v) })} />
-          </Form.Item>
-          <Form.Item label={t('settings.stopFor')} help={t('settings.stopOff')} style={{ marginBottom: 8 }}>
-            <InputNumber data-testid="stop-for" min={0.5} max={3600} step={0.5} value={settings.stopWhenUnimprovedFor ?? null} onChange={(v) => onChange({ stopWhenUnimprovedFor: v === null ? undefined : Number(v) })} />
-          </Form.Item>
-          <Form.Item label={t('settings.stopAfter')} style={{ marginBottom: 8 }}>
-            <InputNumber data-testid="stop-after" min={0} max={3600} step={0.5} value={settings.stopWhenUnimprovedAfter ?? null} onChange={(v) => onChange({ stopWhenUnimprovedAfter: v === null ? undefined : Number(v) })} />
-          </Form.Item>
-          <Form.Item style={{ marginBottom: 8 }}>
+        <div data-testid="manual-time" style={{ marginBottom: 12 }}>
+          <Space wrap align="start" size={[16, 4]}>
+            <Form.Item label={t('settings.timeLimit')} style={{ marginBottom: 4 }}>
+              <InputNumber data-testid="time-limit" style={{ width: 120 }} min={0.5} max={3600} step={1} value={settings.timeLimit} onChange={(v) => v !== null && onChange({ timeLimit: Number(v) })} />
+            </Form.Item>
+            <Form.Item label={t('settings.stopFor')} style={{ marginBottom: 4 }}>
+              <InputNumber data-testid="stop-for" style={{ width: 120 }} min={0.5} max={3600} step={0.5} value={settings.stopWhenUnimprovedFor ?? null} onChange={(v) => onChange({ stopWhenUnimprovedFor: v === null ? undefined : Number(v) })} />
+            </Form.Item>
+            <Form.Item label={t('settings.stopAfter')} style={{ marginBottom: 4 }}>
+              <InputNumber data-testid="stop-after" style={{ width: 120 }} min={0} max={3600} step={0.5} value={settings.stopWhenUnimprovedAfter ?? null} onChange={(v) => onChange({ stopWhenUnimprovedAfter: v === null ? undefined : Number(v) })} />
+            </Form.Item>
+            <Form.Item label={t('settings.stopRatio')} style={{ marginBottom: 4 }}>
+              <InputNumber data-testid="stop-ratio" style={{ width: 120 }} min={0.5} max={10} step={0.5} value={settings.stopWhenUnimprovedRatio ?? null} onChange={(v) => onChange({ stopWhenUnimprovedRatio: v === null ? undefined : Number(v) })} />
+            </Form.Item>
+          </Space>
+          <Space wrap size={[12, 0]} style={{ marginTop: 4 }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t('settings.stopOff')}</Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t('settings.stopRatioHelp')}</Typography.Text>
             <Button size="small" onClick={useRecommended} disabled={!recommendation} data-testid="use-recommended">{t('settings.useRecommended')}</Button>
-          </Form.Item>
-        </Space>
+          </Space>
+        </div>
       ) : null}
       <Form.Item label={t('settings.mode')}>
         <Select style={{ width: 240 }} value={settings.optimizationMode} onChange={(optimizationMode: OptimizationMode) => onChange({ optimizationMode })}

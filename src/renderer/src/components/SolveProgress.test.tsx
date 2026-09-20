@@ -7,7 +7,7 @@ import { SolveProgress } from './SolveProgress'
 
 setupI18n('zh-CN')
 
-const budget = { source: 'auto' as const, timeLimit: 20, stopWhenUnimprovedFor: 4, stopWhenUnimprovedAfter: 10, path: 'TSMS', latency: 4.3, typicalLatency: 4.3, improvement: 8.7, alpha: 4, speed: 1 }
+const budget = { source: 'auto' as const, timeLimit: 20, stopWhenUnimprovedFor: 5, stopWhenUnimprovedAfter: 4.3, stopWhenUnimprovedRatio: 2, path: 'TSMS', latency: 4.3, typicalLatency: 1.2, improvement: 8.7, alpha: 4, speed: 1 }
 const events = [{ time: 1.2, items: 663, bins: 1, profit: 4.2e10, cost: 0, label: 'TSMS n 1' }, { time: 3.5, items: 926, bins: 1, profit: 6.6e10, cost: 0, label: 'TSMS n 8' }]
 const running: JobState = { id: 'j', status: 'running', budget, progress: { startedAt: 0, elapsed: 5, events } }
 const result = (patch: Partial<SolveResult>): SolveResult => ({ status: 'feasible', solver: 'box', objective: 'knapsack', value: 6.6e10, bound: null, solveTime: 13, wallTime: 13.1, bins: [], counts: [], statistics: {}, options: {}, ...patch })
@@ -37,7 +37,8 @@ describe('SolveProgress', () => {
   it('explains how the run ended', () => {
     const done = { ...running, status: 'done' as const, budget: { ...budget, source: 'manual' as const } }
     const { rerender } = render(<SolveProgress job={done} solving={false} result={result({ stopReason: 'unimproved' })} volumeValued={false} />)
-    expect(screen.getByTestId('progress-live').textContent).toContain('提前结束：4.0 秒无改进')
+    // the stall stop is relative to the last improvement (3.5 s), so the panel reports the measured silence
+    expect(screen.getByTestId('progress-live').textContent).toContain('提前结束：3.5 s 后再无改进（沉默 9.6 s）')
     expect(screen.getByText('手动预算')).toBeInTheDocument()
     expect(screen.getByText(/已用 13\.1 s/)).toBeInTheDocument()
     rerender(<SolveProgress job={done} solving={false} result={result({ stopReason: 'callback' })} volumeValued={false} />)

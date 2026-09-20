@@ -26,7 +26,7 @@ export function SolveProgress({ job, solving, result, volumeValued }: Props) {
 
   let finished: string | null = null
   if (!solving && result) {
-    if (result.stopReason === 'unimproved') finished = t('progress.finishedUnimproved', { patience: (budget.stopWhenUnimprovedFor ?? 0).toFixed(1) })
+    if (result.stopReason === 'unimproved') finished = t('progress.finishedUnimproved', { silence: Math.max(0, elapsed - (last?.time ?? 0)).toFixed(1), since: (last?.time ?? 0).toFixed(1) })
     else if (result.stopReason === 'callback') finished = t('progress.finishedCallback')
     else if (result.status === 'optimal') finished = t('progress.finishedProved')
     else finished = t('progress.finishedLimit')

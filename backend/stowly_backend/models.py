@@ -53,7 +53,7 @@ TimeMode = Literal['auto', 'manual']
 class Settings(BaseModel):
     """Solver settings. The time budget has two modes: ``auto`` asks packingsolver3d's ``recommend_time_budget`` for the
     time limit and the stall-stop knobs at solve time (``alpha`` and ``speed`` are its two dials), ``manual`` uses the
-    three values stored here, which the interface pre-fills with the recommendation."""
+    four values stored here, which the interface pre-fills with the recommendation."""
 
     solver: Solver = 'boxstacks'
     objective: Objective = 'bin-packing'
@@ -69,6 +69,9 @@ class Settings(BaseModel):
     timeLimit: float = Field(default=30.0, gt=0)
     stopWhenUnimprovedFor: Optional[float] = Field(default=None, gt=0)
     stopWhenUnimprovedAfter: Optional[float] = Field(default=None, ge=0)
+    # relative patience: stop once no improvement has arrived for this many times the time of the last improvement
+    # (never before a first solution); None = the fixed patience alone
+    stopWhenUnimprovedRatio: Optional[float] = Field(default=None, gt=0)
 
 
 class Project(BaseModel):
@@ -135,6 +138,7 @@ class Budget(BaseModel):
     timeLimit: float
     stopWhenUnimprovedFor: Optional[float] = None
     stopWhenUnimprovedAfter: Optional[float] = None
+    stopWhenUnimprovedRatio: Optional[float] = None  # relative patience (times the time of the last improvement)
     path: str  # upstream algorithm path the estimator predicted (TSMS / TS / SSK / SVC / SOR)
     latency: float  # predicted seconds to the first solution, at the coverage quantile the budget is built on
     typicalLatency: float  # the median prediction of the same time: the comparison point for machine-speed calibration

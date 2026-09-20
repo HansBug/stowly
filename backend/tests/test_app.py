@@ -54,7 +54,7 @@ def test_recommend_route(client, headers, project):
     assert body['source'] == 'manual' and body['timeLimit'] == 2.0 and body['path'] and body['latency'] >= body['typicalLatency'] > 0
     auto = project.model_copy(update={'settings': project.settings.model_copy(update={'timeMode': 'auto'})})
     body = client.post('/api/recommend', headers=headers, json=auto.model_dump(by_alias=True)).json()
-    assert body['source'] == 'auto' and body['timeLimit'] >= 1.0 and body['alpha'] == 4.0
+    assert body['source'] == 'auto' and body['timeLimit'] >= 1.0 and body['alpha'] == 4.0 and body['stopWhenUnimprovedRatio'] == 2.0
     empty = project.model_copy(update={'items': []})
     assert client.post('/api/recommend', headers=headers, json=empty.model_dump(by_alias=True)).status_code == 422
     assert client.post('/api/recommend', json=project.model_dump(by_alias=True)).status_code in (401, 403)

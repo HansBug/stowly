@@ -12,7 +12,7 @@ const numberInput = (testId: string): HTMLElement => {
 import { SettingsPanel } from './SettingsPanel'
 
 const noCalibration = { speed: 1, samples: 0 }
-const budget: Budget = { source: 'auto', timeLimit: 21, stopWhenUnimprovedFor: 9.2, stopWhenUnimprovedAfter: 10.5, path: 'SOR', latency: 2.7, typicalLatency: 2.7, improvement: 18.3, alpha: 8, speed: 1 }
+const budget: Budget = { source: 'auto', timeLimit: 21, stopWhenUnimprovedFor: 5, stopWhenUnimprovedAfter: 2.7, stopWhenUnimprovedRatio: 4, path: 'SOR', latency: 2.7, typicalLatency: 0.6, improvement: 18.3, alpha: 8, speed: 1 }
 const extra = { recommendation: null, calibration: noCalibration, onResetCalibration: () => undefined }
 
 setupI18n('zh-CN')
@@ -62,11 +62,11 @@ describe('SettingsPanel time budget', () => {
   it('shows the recommendation in automatic mode and opens manual mode pre-filled with it', () => {
     const onChange = vi.fn()
     render(<SettingsPanel project={demoProject()} solving={false} onChange={onChange} onSolve={vi.fn()} recommendation={budget} calibration={noCalibration} onResetCalibration={vi.fn()} />)
-    expect(screen.getByTestId('recommendation').textContent).toContain('预计首解 2.7 s，上限 21 s；9.2 s 无改进即停（不早于 10.5 s）')
+    expect(screen.getByTestId('recommendation').textContent).toContain('预计首解 2.7 s，上限 21 s；距上次改进 4.0 倍时长无新改进即停（至少 5 s，不早于 2.7 s）')
     expect(screen.getByTestId('recommendation').textContent).toContain('SOR')
     expect(screen.queryByTestId('manual-time')).toBeNull()
     fireEvent.click(screen.getByText('手动设置'))
-    expect(onChange).toHaveBeenCalledWith({ timeMode: 'manual', timeLimit: 21, stopWhenUnimprovedFor: 9.2, stopWhenUnimprovedAfter: 10.5 })
+    expect(onChange).toHaveBeenCalledWith({ timeMode: 'manual', timeLimit: 21, stopWhenUnimprovedFor: 5, stopWhenUnimprovedAfter: 2.7, stopWhenUnimprovedRatio: 4 })
     fireEvent.click(screen.getByText('更充分'))
     expect(onChange).toHaveBeenCalledWith({ alpha: 8 })
     const thorough = { ...demoProject(), settings: { ...demoProject().settings, alpha: 8 } }
@@ -100,14 +100,18 @@ describe('SettingsPanel time budget', () => {
     expect(onChange).toHaveBeenCalledWith({ stopWhenUnimprovedFor: undefined })
     fireEvent.change(numberInput('stop-after'), { target: { value: '3' } })
     expect(onChange).toHaveBeenCalledWith({ stopWhenUnimprovedAfter: 3 })
+    fireEvent.change(numberInput('stop-ratio'), { target: { value: '2' } })
+    expect(onChange).toHaveBeenCalledWith({ stopWhenUnimprovedRatio: 2 })
+    fireEvent.change(numberInput('stop-ratio'), { target: { value: '' } })
+    expect(onChange).toHaveBeenCalledWith({ stopWhenUnimprovedRatio: undefined })
     fireEvent.click(screen.getByTestId('use-recommended'))
-    expect(onChange).toHaveBeenCalledWith({ timeLimit: 21, stopWhenUnimprovedFor: 9.2, stopWhenUnimprovedAfter: 10.5 })
+    expect(onChange).toHaveBeenCalledWith({ timeLimit: 21, stopWhenUnimprovedFor: 5, stopWhenUnimprovedAfter: 2.7, stopWhenUnimprovedRatio: 4 })
     expect(screen.getByText(/留空则只按时间上限结束/)).toBeInTheDocument()
   })
 
   it('warns about the slow multi-bin boxstacks path and the 600 s cap, and shows the calibration', () => {
     const onReset = vi.fn()
-    const svc = { ...budget, path: 'SVC', timeLimit: 600, stopWhenUnimprovedFor: null, stopWhenUnimprovedAfter: null }
+    const svc = { ...budget, path: 'SVC', timeLimit: 600, stopWhenUnimprovedFor: null, stopWhenUnimprovedAfter: null, stopWhenUnimprovedRatio: null }
     render(<SettingsPanel project={demoProject()} solving={false} onChange={vi.fn()} onSolve={vi.fn()} recommendation={svc} calibration={{ speed: 1.37, samples: 3 }} onResetCalibration={onReset} />)
     expect(screen.getByTestId('svc-warning')).toBeInTheDocument()
     expect(screen.getByTestId('cap-warning')).toBeInTheDocument()
