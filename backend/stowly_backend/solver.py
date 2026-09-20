@@ -74,10 +74,12 @@ def budget_for(project: Project, instance: Optional[Instance] = None) -> Budget:
     recommended = recommend_time_budget(instance or build_instance(project), settings.solver, alpha=settings.alpha, speed=settings.speed)
     if settings.timeMode == 'auto':
         return Budget(source='auto', timeLimit=recommended.time_limit, stopWhenUnimprovedFor=recommended.stop_when_unimproved_for,
-                      stopWhenUnimprovedAfter=recommended.stop_when_unimproved_after, path=recommended.path, latency=recommended.latency,
+                      stopWhenUnimprovedAfter=recommended.stop_when_unimproved_after, stopWhenUnimprovedRatio=recommended.stop_when_unimproved_ratio,
+                      path=recommended.path, latency=recommended.latency,
                       typicalLatency=recommended.typical_latency, improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
     return Budget(source='manual', timeLimit=settings.timeLimit, stopWhenUnimprovedFor=settings.stopWhenUnimprovedFor,
-                  stopWhenUnimprovedAfter=settings.stopWhenUnimprovedAfter, path=recommended.path, latency=recommended.latency,
+                  stopWhenUnimprovedAfter=settings.stopWhenUnimprovedAfter, stopWhenUnimprovedRatio=settings.stopWhenUnimprovedRatio,
+                  path=recommended.path, latency=recommended.latency,
                   typicalLatency=recommended.typical_latency, improvement=recommended.improvement, alpha=recommended.alpha, speed=recommended.speed)
 
 
@@ -99,6 +101,8 @@ def solve_project(project: Project, budget: Optional[Budget] = None, on_event: O
         options['stop_when_unimproved_for'] = budget.stopWhenUnimprovedFor
         if budget.stopWhenUnimprovedAfter is not None:
             options['stop_when_unimproved_after'] = budget.stopWhenUnimprovedAfter
+        if budget.stopWhenUnimprovedRatio is not None:
+            options['stop_when_unimproved_ratio'] = budget.stopWhenUnimprovedRatio
     result = engine.solve(instance, **options)
     packed_bins: List[PackedBin] = []
     counts = {item.id: 0 for item in project.items}

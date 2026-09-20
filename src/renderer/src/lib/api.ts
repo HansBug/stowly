@@ -12,6 +12,7 @@ export interface Budget {
   timeLimit: number
   stopWhenUnimprovedFor?: number | null
   stopWhenUnimprovedAfter?: number | null
+  stopWhenUnimprovedRatio?: number | null
   path: string
   /** Covered (upper) prediction of the first-solution time the budget is built on. */
   latency: number

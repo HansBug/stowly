@@ -60,6 +60,8 @@ export interface Settings {
   timeLimit: number
   stopWhenUnimprovedFor?: number
   stopWhenUnimprovedAfter?: number
+  /** Relative patience: stop once no improvement has arrived for this many times the time of the last improvement (never before a first solution). */
+  stopWhenUnimprovedRatio?: number
   /** Machine speed relative to the estimator's reference machine. The app fills it from its calibration store before each request; it is not a user setting. */
   speed?: number
 }

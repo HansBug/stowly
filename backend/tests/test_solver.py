@@ -118,7 +118,7 @@ def test_boxstacks_keeps_items_upright_and_forwards_stacking_fields(project):
 def test_settings_defaults_are_boxstacks_and_automatic_time():
     settings = Settings()
     assert settings.solver == 'boxstacks' and settings.timeMode == 'auto' and settings.alpha is None and settings.speed == 1.0
-    assert settings.stopWhenUnimprovedFor is None and settings.stopWhenUnimprovedAfter is None
+    assert settings.stopWhenUnimprovedFor is None and settings.stopWhenUnimprovedAfter is None and settings.stopWhenUnimprovedRatio is None
 
 
 def test_budget_for_auto_takes_the_recommendation(project):
@@ -127,6 +127,7 @@ def test_budget_for_auto_takes_the_recommendation(project):
     budget = budget_for(auto)
     assert budget.source == 'auto' and budget.path in ('TSMS', 'TS', 'SSK', 'SVC') and budget.alpha == 4.0 and budget.speed == 1.0
     assert budget.timeLimit >= 1.0 and budget.stopWhenUnimprovedFor >= 2.0 and 0 <= budget.stopWhenUnimprovedAfter <= budget.timeLimit
+    assert budget.stopWhenUnimprovedRatio == 2.0  # box, alpha 4 -> alpha / 2
     assert budget.latency > 0 and budget.improvement >= 0
     assert 0 < budget.typicalLatency <= budget.latency
     quality = budget_for(auto.model_copy(update={'settings': auto.settings.model_copy(update={'alpha': 8.0, 'speed': 2.0})}))
@@ -135,12 +136,13 @@ def test_budget_for_auto_takes_the_recommendation(project):
 
 def test_budget_for_manual_keeps_the_settings_and_still_predicts(project):
     from stowly_backend.solver import budget_for
-    manual = project.model_copy(update={'settings': project.settings.model_copy(update={'stopWhenUnimprovedFor': 3.0, 'stopWhenUnimprovedAfter': 1.0})})
+    manual = project.model_copy(update={'settings': project.settings.model_copy(update={'stopWhenUnimprovedFor': 3.0, 'stopWhenUnimprovedAfter': 1.0, 'stopWhenUnimprovedRatio': 1.5})})
     budget = budget_for(manual)
     assert budget.source == 'manual' and budget.timeLimit == 2.0 and budget.stopWhenUnimprovedFor == 3.0 and budget.stopWhenUnimprovedAfter == 1.0
+    assert budget.stopWhenUnimprovedRatio == 1.5
     assert budget.path and budget.latency > 0
     plain = budget_for(project)
-    assert plain.stopWhenUnimprovedFor is None and plain.stopWhenUnimprovedAfter is None
+    assert plain.stopWhenUnimprovedFor is None and plain.stopWhenUnimprovedAfter is None and plain.stopWhenUnimprovedRatio is None
 
 
 def test_solve_project_reports_events_stop_reason_and_first_solution(container_project):
@@ -164,12 +166,12 @@ def test_solve_project_passes_the_stall_stop_knobs(project, monkeypatch):
         return real_solve(instance, time_limit=1.0, optimization_mode=options['optimization_mode'])
 
     monkeypatch.setattr(solver_module.box, 'solve', fake_solve)
-    budget = Budget(source='manual', timeLimit=5.0, stopWhenUnimprovedFor=2.0, stopWhenUnimprovedAfter=1.0, path='TS', latency=0.2, typicalLatency=0.2, improvement=1.0, alpha=4.0, speed=1.0)
+    budget = Budget(source='manual', timeLimit=5.0, stopWhenUnimprovedFor=2.0, stopWhenUnimprovedAfter=1.0, stopWhenUnimprovedRatio=1.5, path='TS', latency=0.2, typicalLatency=0.2, improvement=1.0, alpha=4.0, speed=1.0)
     solve_project(project, budget)
-    assert seen['time_limit'] == 5.0 and seen['stop_when_unimproved_for'] == 2.0 and seen['stop_when_unimproved_after'] == 1.0
+    assert seen['time_limit'] == 5.0 and seen['stop_when_unimproved_for'] == 2.0 and seen['stop_when_unimproved_after'] == 1.0 and seen['stop_when_unimproved_ratio'] == 1.5
     seen.clear()
-    solve_project(project, budget.model_copy(update={'stopWhenUnimprovedFor': 2.0, 'stopWhenUnimprovedAfter': None}))
-    assert seen['stop_when_unimproved_for'] == 2.0 and 'stop_when_unimproved_after' not in seen
+    solve_project(project, budget.model_copy(update={'stopWhenUnimprovedFor': 2.0, 'stopWhenUnimprovedAfter': None, 'stopWhenUnimprovedRatio': None}))
+    assert seen['stop_when_unimproved_for'] == 2.0 and 'stop_when_unimproved_after' not in seen and 'stop_when_unimproved_ratio' not in seen
 
 
 def test_job_manager_exposes_budget_and_progress(container_project):
