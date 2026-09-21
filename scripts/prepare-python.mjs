@@ -48,6 +48,6 @@ const python = target.startsWith('win') ? path.join(dest, 'python.exe') : path.j
 console.log('installing backend into', python)
 const pipArgs = ['-m', 'pip', 'install', '--no-cache-dir', '--upgrade', 'pip']
 execFileSync(python, pipArgs, { stdio: 'inherit' })
-execFileSync(python, ['-m', 'pip', 'install', '--no-cache-dir', path.join(root, 'backend'), 'packingsolver3d>=0.0.4'], { stdio: 'inherit' })
+execFileSync(python, ['-m', 'pip', 'install', '--no-cache-dir', path.join(root, 'backend'), 'packingsolver3d>=0.0.5'], { stdio: 'inherit' })
 for (const junk of ['share', 'include']) rmSync(path.join(dest, junk), { recursive: true, force: true })
 execFileSync(python, ['-c', 'import stowly_backend, packingsolver3d; print("backend", stowly_backend.__version__, "packingsolver3d", packingsolver3d.__version__)'], { stdio: 'inherit' })
